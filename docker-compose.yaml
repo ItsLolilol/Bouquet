@@ -1,0 +1,8 @@
+services:
+  bouquet-ascii:
+    build: .
+    image: bouquet-ascii:latest
+    container_name: bouquet-ascii
+    restart: unless-stopped
+    ports:
+      - "2222:80"

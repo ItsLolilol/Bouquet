@@ -1,0 +1,715 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2775.1">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;For You&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>* {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin: 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>box-sizing: border-box;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>-webkit-tap-highlight-color: transparent;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>user-select: none;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>html, body {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 100%;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>height: 100%;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background-color: #000000;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>overflow: hidden;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-family: "JetBrains Mono", "Fira Code", "SF Mono", "Cascadia Code", Consolas, "Courier New", monospace;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>#scene {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display: block;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>width: 100vw;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>height: 100dvh;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>touch-action: none;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cursor: grab;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>#scene:active {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>cursor: grabbing;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;canvas id="scene"&gt;&lt;/canvas&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>(() =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const canvas = document.getElementById("scene");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const ctx = canvas.getContext("2d", { alpha: false });</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Message affiché en ASCII en bas du bouquet</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const MESSAGE = "I love you sweetheart &lt;3";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Palette de densité ASCII (du sombre au lumineux)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const RAMP = " .,:;-=+*#%@";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Couleurs fidèles au rendu terminal de la vidéo</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const COLORS = {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>pink:<span class="Apple-converted-space">        </span>[255, 105, 180],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>lightPink: <span class="Apple-converted-space">  </span>[255, 165, 210],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>red: <span class="Apple-converted-space">        </span>[255, 65, 85],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>purple:<span class="Apple-converted-space">      </span>[195, 110, 255],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>yellow:<span class="Apple-converted-space">      </span>[255, 225, 65],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>orange:<span class="Apple-converted-space">      </span>[255, 145, 50],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>white: <span class="Apple-converted-space">      </span>[245, 245, 250],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>brownCenter: [120, 72, 32],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>goldCenter:<span class="Apple-converted-space">  </span>[255, 195, 45],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>stemGreen: <span class="Apple-converted-space">  </span>[55, 185, 85],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>leafGreen: <span class="Apple-converted-space">  </span>[75, 225, 105],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>darkGreen: <span class="Apple-converted-space">  </span>[35, 140, 65],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>wrapLight: <span class="Apple-converted-space">  </span>[220, 225, 235],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>wrapBack:<span class="Apple-converted-space">    </span>[185, 195, 210],</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ribbon:<span class="Apple-converted-space">      </span>[255, 75, 130]</p>
+<p class="p1"><span class="Apple-converted-space">      </span>};</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Utilitaires vectoriels 3D</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function normalize(v) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const len = Math.hypot(v[0], v[1], v[2]) || 1;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return [v[0] / len, v[1] / len, v[2] / len];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>function cross(a, b) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return [</p>
+<p class="p1"><span class="Apple-converted-space">          </span>a[1] * b[2] - a[2] * b[1],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>a[2] * b[0] - a[0] * b[2],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>a[0] * b[1] - a[1] * b[0]</p>
+<p class="p1"><span class="Apple-converted-space">        </span>];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>function basisFromDir(dir) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const up = normalize(dir);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const helper = Math.abs(up[1]) &lt; 0.9 ? [0, 1, 0] : [1, 0, 0];</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const right = normalize(cross(helper, up));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const forward = normalize(cross(up, right));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>return { right, up, forward };</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Construction du bouquet 3D (nuage de points + normales)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const points = [];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addPoint(x, y, z, nx, ny, nz, color, charOverride = null) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>points.push({</p>
+<p class="p1"><span class="Apple-converted-space">          </span>x, y, z,</p>
+<p class="p1"><span class="Apple-converted-space">          </span>nx, ny, nz,</p>
+<p class="p1"><span class="Apple-converted-space">          </span>r: color[0],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>g: color[1],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>b: color[2],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>ch: charOverride</p>
+<p class="p1"><span class="Apple-converted-space">        </span>});</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Fleur type cosmos / marguerite / tournesol</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addCosmos(cx, cy, cz, dir, petalCount, radius, petalColor, centerColor) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const { right, up, forward } = basisFromDir(dir);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Cœur bombé de la fleur</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const centerR = radius * 0.30;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt; 65; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const u = Math.sqrt(i / 65);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const theta = i * 2.39996; // Angle d'or</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const rr = u * centerR;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const lx = Math.cos(theta) * rr;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const lz = Math.sin(theta) * rr;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const ly = Math.sqrt(Math.max(0, 1 - u * u)) * centerR * 0.75;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const px = cx + right[0] * lx + up[0] * ly + forward[0] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const py = cy + right[1] * lx + up[1] * ly + forward[1] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const pz = cz + right[2] * lx + up[2] * ly + forward[2] * lz;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const n = normalize([</p>
+<p class="p1"><span class="Apple-converted-space">            </span>right[0] * lx + up[0] * (ly + 0.2) + forward[0] * lz,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>right[1] * lx + up[1] * (ly + 0.2) + forward[1] * lz,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>right[2] * lx + up[2] * (ly + 0.2) + forward[2] * lz</p>
+<p class="p1"><span class="Apple-converted-space">          </span>]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>addPoint(px, py, pz, n[0], n[1], n[2], centerColor);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Pétales en 3D légèrement recourbés</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let p = 0; p &lt; petalCount; p++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const baseAngle = (p / petalCount) * Math.PI * 2;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const petalWidth = (Math.PI / petalCount) * 0.85;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let ri = 1; ri &lt;= 8; ri++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const t = ri / 8;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const dist = centerR * 0.85 + t * (radius - centerR * 0.85);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const widthFactor = Math.sin(t * Math.PI) * petalWidth;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const stepsW = Math.max(2, Math.round(4 * Math.sin(t * Math.PI)));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>for (let wi = -stepsW; wi &lt;= stepsW; wi++) {</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const a = baseAngle + (wi / (stepsW || 1)) * widthFactor;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const cup = Math.sin(t * Math.PI * 0.85) * radius * 0.22 - t * t * radius * 0.12;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">              </span>const lx = Math.cos(a) * dist;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const lz = Math.sin(a) * dist;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const ly = cup;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">              </span>const px = cx + right[0] * lx + up[0] * ly + forward[0] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const py = cy + right[1] * lx + up[1] * ly + forward[1] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const pz = cz + right[2] * lx + up[2] * ly + forward[2] * lz;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">              </span>const n = normalize([</p>
+<p class="p1"><span class="Apple-converted-space">                </span>up[0] * 0.85 + right[0] * Math.cos(a) * 0.25 + forward[0] * Math.sin(a) * 0.25,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>up[1] * 0.85 + right[1] * Math.cos(a) * 0.25 + forward[1] * Math.sin(a) * 0.25,</p>
+<p class="p1"><span class="Apple-converted-space">                </span>up[2] * 0.85 + right[2] * Math.cos(a) * 0.25 + forward[2] * Math.sin(a) * 0.25</p>
+<p class="p1"><span class="Apple-converted-space">              </span>]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">              </span>addPoint(px, py, pz, n[0], n[1], n[2], petalColor);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Tulipe en 3D (forme de calice)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addTulip(cx, cy, cz, dir, scale, color) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const { right, up, forward } = basisFromDir(dir);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const h = 0.62 * scale;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const maxR = 0.34 * scale;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let vi = 0; vi &lt;= 14; vi++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const v = vi / 14;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const r = maxR * Math.pow(Math.sin(v * Math.PI * 0.82), 0.72);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y = (v - 0.1) * h;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const ringSteps = Math.max(8, Math.round(24 * (r / maxR)));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let ui = 0; ui &lt; ringSteps; ui++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const u = (ui / ringSteps) * Math.PI * 2;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lobe = 1 + 0.08 * Math.cos(u * 6) * v;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lx = Math.cos(u) * r * lobe;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lz = Math.sin(u) * r * lobe;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const px = cx + right[0] * lx + up[0] * y + forward[0] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const py = cy + right[1] * lx + up[1] * y + forward[1] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const pz = cz + right[2] * lx + up[2] * y + forward[2] * lz;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const n = normalize([</p>
+<p class="p1"><span class="Apple-converted-space">              </span>right[0] * Math.cos(u) + forward[0] * Math.sin(u) + up[0] * 0.25,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>right[1] * Math.cos(u) + forward[1] * Math.sin(u) + up[1] * 0.25,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>right[2] * Math.cos(u) + forward[2] * Math.sin(u) + up[2] * 0.25</p>
+<p class="p1"><span class="Apple-converted-space">            </span>]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(px, py, pz, n[0], n[1], n[2], color);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Tige courbée reliant la fleur au bas du bouquet</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addStem(x0, y0, z0, x1, y1, z1) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const steps = 26;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const midX = (x0 + x1) * 0.35;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const midY = (y0 + y1) * 0.5;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const midZ = (z0 + z1) * 0.35;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt;= steps; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const t = i / steps;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const inv = 1 - t;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const x = inv * inv * x0 + 2 * inv * t * midX + t * t * x1;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y = inv * inv * y0 + 2 * inv * t * midY + t * t * y1;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const z = inv * inv * z0 + 2 * inv * t * midZ + t * t * z1;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let a = 0; a &lt; 4; a++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const ang = (a / 4) * Math.PI * 2;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const rad = 0.032;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(</p>
+<p class="p1"><span class="Apple-converted-space">              </span>x + Math.cos(ang) * rad,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>y,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>z + Math.sin(ang) * rad,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>Math.cos(ang), 0.15, Math.sin(ang),</p>
+<p class="p1"><span class="Apple-converted-space">              </span>COLORS.stemGreen</p>
+<p class="p1"><span class="Apple-converted-space">            </span>);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Feuille verte allongée en 3D</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addLeaf(ox, oy, oz, dir, length, width, color) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const { right, up, forward } = basisFromDir(dir);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 1; i &lt;= 12; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const t = i / 12;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const w = Math.sin(t * Math.PI) * width;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const droop = -t * t * length * 0.28;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const wSteps = Math.max(1, Math.round(3 * Math.sin(t * Math.PI)));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let j = -wSteps; j &lt;= wSteps; j++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const s = j / (wSteps || 1);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lx = s * w;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const ly = t * length;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lz = droop + Math.abs(s) * w * 0.18;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const px = ox + right[0] * lx + up[0] * ly + forward[0] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const py = oy + right[1] * lx + up[1] * ly + forward[1] * lz;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const pz = oz + right[2] * lx + up[2] * ly + forward[2] * lz;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(px, py, pz, forward[0], forward[1] + 0.4, forward[2], color);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Papier d'emballage conique + rabat arrière</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addWrap() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Cône principal (resserré à la taille y = -0.85, évasé vers le haut et le bas)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const yTop = 0.45;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const yWaist = -0.88;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const yBot = -1.62;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt;= 34; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const t = i / 34;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y = yBot + t * (yTop - yBot);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>let radius;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if (y &gt;= yWaist) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const k = (y - yWaist) / (yTop - yWaist);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>radius = 0.24 + Math.pow(k, 1.15) * 0.88;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>} else {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const k = (yWaist - y) / (yWaist - yBot);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>radius = 0.24 + k * 0.28;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const ringSteps = Math.max(18, Math.round(radius * 46));</p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let j = 0; j &lt; ringSteps; j++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const a = (j / ringSteps) * Math.PI * 2;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Effet papier plié sur le bord supérieur</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const fold = y &gt; -0.2 ? Math.sin(a * 5) * 0.045 * ((y + 0.2) / 0.65) : 0;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Ouverture légèrement plus basse devant pour laisser voir les fleurs</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (y &gt; 0.15 &amp;&amp; Math.sin(a) &gt; 0.25) continue;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const r = radius + fold;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const x = Math.cos(a) * r;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const z = Math.sin(a) * r;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(</p>
+<p class="p1"><span class="Apple-converted-space">              </span>x, y, z,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>Math.cos(a), 0.22, Math.sin(a),</p>
+<p class="p1"><span class="Apple-converted-space">              </span>Math.sin(a) &lt; 0 ? COLORS.wrapBack : COLORS.wrapLight</p>
+<p class="p1"><span class="Apple-converted-space">            </span>);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Grand papier plié qui remonte derrière le bouquet</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt;= 18; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const t = i / 18;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y = 0.35 + t * 0.95;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const span = 0.95 * (1 - t * 0.25);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const steps = 22;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let j = 0; j &lt;= steps; j++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const u = j / steps;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const a = Math.PI + (u - 0.5) * 2.1; // Face arrière</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const r = 1.08 + t * 0.22 + Math.sin(u * Math.PI * 3) * 0.04;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const x = Math.cos(a) * r * (span / 0.95);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const z = Math.sin(a) * r;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(x, y, z, Math.cos(a), 0.15, Math.sin(a), COLORS.wrapBack);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Ruban et nœud autour de la taille du bouquet</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function addRibbon() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const yWaist = -0.88;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const rWaist = 0.28;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Anneau du ruban</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let iy = -2; iy &lt;= 2; iy++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y = yWaist + iy * 0.035;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let j = 0; j &lt; 28; j++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const a = (j / 28) * Math.PI * 2;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(</p>
+<p class="p1"><span class="Apple-converted-space">              </span>Math.cos(a) * rWaist, y, Math.sin(a) * rWaist,</p>
+<p class="p1"><span class="Apple-converted-space">              </span>Math.cos(a), 0, Math.sin(a),</p>
+<p class="p1"><span class="Apple-converted-space">              </span>COLORS.ribbon</p>
+<p class="p1"><span class="Apple-converted-space">            </span>);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Deux boucles du nœud devant (z &gt; 0)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (const side of [-1, 1]) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let i = 0; i &lt; 24; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const t = (i / 24) * Math.PI * 2;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lx = side * (0.20 + Math.cos(t) * 0.18);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const ly = yWaist + Math.sin(t) * 0.12;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lz = rWaist + 0.08 + Math.sin(t * 2) * 0.04;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(lx, ly, lz, side * 0.3, Math.sin(t) * 0.4, 0.9, COLORS.ribbon);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>// Rubans qui pendent</p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let i = 0; i &lt;= 14; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const t = i / 14;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lx = side * (0.06 + t * 0.22);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const ly = yWaist - 0.05 - t * 0.52;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lz = rWaist + 0.08 + t * 0.10;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>addPoint(lx, ly, lz, 0, 0.1, 1, COLORS.ribbon);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Assemblage complet du bouquet</p>
+<p class="p1"><span class="Apple-converted-space">      </span>function buildBouquet() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Fleurs principales (cosmos, marguerites, tournesol, tulipes)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const cosmosSpecs = [</p>
+<p class="p1"><span class="Apple-converted-space">          </span>// [x, y, z, dir, petals, radius, petalColor, centerColor]</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.00,<span class="Apple-converted-space">  </span>1.28,<span class="Apple-converted-space">  </span>0.12, [ 0.0,<span class="Apple-converted-space">  </span>1.0,<span class="Apple-converted-space">  </span>0.35], 10, 0.52, COLORS.white, <span class="Apple-converted-space">    </span>COLORS.goldCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[-0.78,<span class="Apple-converted-space">  </span>1.05,<span class="Apple-converted-space">  </span>0.22, [-0.55, 0.85, 0.45],<span class="Apple-converted-space">  </span>8, 0.48, COLORS.pink,<span class="Apple-converted-space">      </span>COLORS.goldCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.82,<span class="Apple-converted-space">  </span>0.96,<span class="Apple-converted-space">  </span>0.18, [ 0.55, 0.82, 0.42], 12, 0.50, COLORS.yellow,<span class="Apple-converted-space">    </span>COLORS.brownCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[-0.38,<span class="Apple-converted-space">  </span>0.72,<span class="Apple-converted-space">  </span>0.62, [-0.30, 0.65, 0.85],<span class="Apple-converted-space">  </span>8, 0.44, COLORS.purple,<span class="Apple-converted-space">    </span>COLORS.goldCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.45,<span class="Apple-converted-space">  </span>0.68,<span class="Apple-converted-space">  </span>0.60, [ 0.35, 0.65, 0.82],<span class="Apple-converted-space">  </span>9, 0.45, COLORS.lightPink, COLORS.goldCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[-1.08,<span class="Apple-converted-space">  </span>0.55, -0.10, [-0.85, 0.55, 0.15], 10, 0.44, COLORS.orange,<span class="Apple-converted-space">    </span>COLORS.brownCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 1.05,<span class="Apple-converted-space">  </span>0.52, -0.18, [ 0.85, 0.52, 0.05],<span class="Apple-converted-space">  </span>8, 0.44, COLORS.pink,<span class="Apple-converted-space">      </span>COLORS.goldCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.05,<span class="Apple-converted-space">  </span>0.88, -0.58, [ 0.05, 0.85,-0.65],<span class="Apple-converted-space">  </span>9, 0.46, COLORS.purple,<span class="Apple-converted-space">    </span>COLORS.goldCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[-0.65,<span class="Apple-converted-space">  </span>0.75, -0.52, [-0.55, 0.78,-0.55], 10, 0.45, COLORS.yellow,<span class="Apple-converted-space">    </span>COLORS.brownCenter],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.68,<span class="Apple-converted-space">  </span>0.78, -0.50, [ 0.55, 0.80,-0.52],<span class="Apple-converted-space">  </span>8, 0.44, COLORS.orange,<span class="Apple-converted-space">    </span>COLORS.goldCenter]</p>
+<p class="p1"><span class="Apple-converted-space">        </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (const [x, y, z, dir, petals, r, col, center] of cosmosSpecs) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addCosmos(x, y, z, dir, petals, r, col, center);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addStem(x, y - 0.1, z, x * 0.15, -1.72, z * 0.15);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Tulipes rouges, roses et jaunes</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const tulipSpecs = [</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.38,<span class="Apple-converted-space">  </span>1.22, -0.12, [ 0.25, 1.0,<span class="Apple-converted-space">  </span>0.05], 1.05, COLORS.red],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[-0.45,<span class="Apple-converted-space">  </span>1.18, -0.18, [-0.25, 1.0, -0.05], 1.00, COLORS.red],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.02,<span class="Apple-converted-space">  </span>0.48,<span class="Apple-converted-space">  </span>0.78, [ 0.0,<span class="Apple-converted-space">  </span>0.55, 0.90], 0.92, COLORS.red],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[-0.82,<span class="Apple-converted-space">  </span>0.32,<span class="Apple-converted-space">  </span>0.45, [-0.65, 0.45, 0.65], 0.90, COLORS.yellow],</p>
+<p class="p1"><span class="Apple-converted-space">          </span>[ 0.85,<span class="Apple-converted-space">  </span>0.32,<span class="Apple-converted-space">  </span>0.42, [ 0.65, 0.45, 0.62], 0.90, COLORS.pink]</p>
+<p class="p1"><span class="Apple-converted-space">        </span>];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (const [x, y, z, dir, scale, col] of tulipSpecs) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addTulip(x, y, z, dir, scale, col);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addStem(x, y, z, x * 0.12, -1.72, z * 0.12);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Feuillage vert autour de la couronne</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const leafCount = 14;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt; leafCount; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const a = (i / leafCount) * Math.PI * 2 + 0.15;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const dir = [Math.cos(a) * 0.92, 0.35 + (i % 3) * 0.12, Math.sin(a) * 0.92];</p>
+<p class="p1"><span class="Apple-converted-space">          </span>addLeaf(</p>
+<p class="p1"><span class="Apple-converted-space">            </span>Math.cos(a) * 0.42, 0.22, Math.sin(a) * 0.42,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>dir,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>0.85 + (i % 2) * 0.18,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>0.20,</p>
+<p class="p1"><span class="Apple-converted-space">            </span>i % 2 === 0 ? COLORS.leafGreen : COLORS.darkGreen</p>
+<p class="p1"><span class="Apple-converted-space">          </span>);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>addWrap();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>addRibbon();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Particules flottantes autour du bouquet</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const sparkles = Array.from({ length: 28 }, (_, i) =&gt; ({</p>
+<p class="p1"><span class="Apple-converted-space">        </span>angle: (i / 28) * Math.PI * 2,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>radius: 1.45 + Math.random() * 0.85,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>yBase: -1.2 + Math.random() * 2.8,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>speed: 0.4 + Math.random() * 0.6,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>phase: Math.random() * Math.PI * 2,</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ch: i % 3 === 0 ? "*" : (i % 3 === 1 ? "+" : "."),</p>
+<p class="p1"><span class="Apple-converted-space">        </span>color: i % 3 === 0 ? COLORS.lightPink : (i % 3 === 1 ? COLORS.yellow : COLORS.white)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>buildBouquet();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Caméra &amp; Interactions (Souris + Tactile)</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let yaw = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let pitch = 0.14;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let zoom = 1.0;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>let velYaw = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let velPitch = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const AUTO_SPIN_SPEED = 0.0085;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>const activePointers = new Map();</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let isDragging = false;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let lastX = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let lastY = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let lastPinchDist = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let lastTapTime = 0;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>canvas.addEventListener("pointerdown", (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas.setPointerCapture(e.pointerId);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Double-tap / double-clic pour réinitialiser la vue</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const now = performance.now();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (activePointers.size === 1 &amp;&amp; now - lastTapTime &lt; 280) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>pitch = 0.14;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>zoom = 1.0;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>velYaw = 0;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>velPitch = 0;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>lastTapTime = now;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (activePointers.size === 1) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>isDragging = true;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastX = e.clientX;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastY = e.clientY;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else if (activePointers.size === 2) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>isDragging = false;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const pts = [...activePointers.values()];</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastPinchDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>canvas.addEventListener("pointermove", (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (!activePointers.has(e.pointerId)) return;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (activePointers.size === 1 &amp;&amp; isDragging) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const dx = e.clientX - lastX;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const dy = e.clientY - lastY;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastX = e.clientX;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastY = e.clientY;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>velYaw = dx * 0.009;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>velPitch = dy * 0.007;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>yaw += velYaw;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>pitch = Math.max(-0.95, Math.min(1.05, pitch + velPitch));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else if (activePointers.size === 2) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const pts = [...activePointers.values()];</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if (lastPinchDist &gt; 0) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>zoom = Math.max(0.55, Math.min(2.1, zoom * (dist / lastPinchDist)));</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastPinchDist = dist;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>function endPointer(e) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>activePointers.delete(e.pointerId);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (activePointers.size === 1) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const [pt] = activePointers.values();</p>
+<p class="p1"><span class="Apple-converted-space">          </span>isDragging = true;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastX = pt.x;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastY = pt.y;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>} else if (activePointers.size === 0) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>isDragging = false;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>lastPinchDist = 0;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>canvas.addEventListener("pointerup", endPointer);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>canvas.addEventListener("pointercancel", endPointer);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>canvas.addEventListener("wheel", (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>e.preventDefault();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const factor = e.deltaY &gt; 0 ? 0.92 : 1.08;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>zoom = Math.max(0.55, Math.min(2.1, zoom * factor));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}, { passive: false });</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Grille ASCII &amp; Buffers pré-alloués</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let cols = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let rows = 0;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let charW = 8;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let charH = 14;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let fontSize = 13;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let zBuf = new Float32Array(0);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let chBuf = [];</p>
+<p class="p1"><span class="Apple-converted-space">      </span>let colBuf = [];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>function resize() {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const dpr = Math.min(window.devicePixelRatio || 1, 2);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const w = window.innerWidth;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const h = window.innerHeight;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas.width = Math.floor(w * dpr);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas.height = Math.floor(h * dpr);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.setTransform(dpr, 0, 0, dpr, 0, 0);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Taille de police adaptative selon l'écran (mobile, iPad, PC)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const minDim = Math.min(w, h);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>fontSize = Math.max(9, Math.min(15, Math.floor(minDim / 52)));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.font = `bold ${fontSize}px "JetBrains Mono", "Fira Code", Consolas, monospace`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.textBaseline = "top";</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>charW = ctx.measureText("M").width;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>charH = Math.ceil(fontSize * 1.15);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>cols = Math.max(24, Math.floor(w / charW));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>rows = Math.max(20, Math.floor(h / charH));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const size = cols * rows;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>zBuf = new Float32Array(size);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>chBuf = new Array(size);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>colBuf = new Array(size);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>window.addEventListener("resize", resize);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>resize();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// Boucle de rendu 3D -&gt; ASCII</p>
+<p class="p1"><span class="Apple-converted-space">      </span>// ==========================================</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const lightDir = normalize([0.45, 0.72, 0.85]);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>function render(time) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>requestAnimationFrame(render);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Rotation automatique + inertie fluide après un glisser</p>
+<p class="p1"><span class="Apple-converted-space">        </span>if (!isDragging) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>yaw += AUTO_SPIN_SPEED + velYaw;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>pitch = Math.max(-0.95, Math.min(1.05, pitch + velPitch));</p>
+<p class="p1"><span class="Apple-converted-space">          </span>velYaw *= 0.92;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>velPitch *= 0.92;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const size = cols * rows;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>zBuf.fill(-1e9);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>chBuf.fill("");</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const cosY = Math.cos(yaw);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const sinY = Math.sin(yaw);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const cosX = Math.cos(pitch);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const sinX = Math.sin(pitch);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Zone réservée au texte en bas</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const usableRows = rows - 4;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const centerCol = cols * 0.5;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const centerRow = usableRows * 0.52;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// Mise à l'échelle automatique (garde le bouquet entier sur portrait et paysage)</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const charAspect = charH / charW;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const scaleY = Math.min(usableRows * 0.25, (cols / charAspect) * 0.28) * zoom;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const scaleX = scaleY * charAspect;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const camDist = 5.4;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 1. Projection des points du bouquet</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt; points.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const p = points[i];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>// Rotation Y puis X</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const x1 = p.x * cosY - p.z * sinY;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const z1 = p.x * sinY + p.z * cosY;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y2 = p.y * cosX - z1 * sinX;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const z2 = p.y * sinX + z1 * cosX;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const invZ = camDist / (camDist - z2);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if (invZ &lt;= 0) continue;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const sx = Math.round(centerCol + x1 * scaleX * invZ);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const sy = Math.round(centerRow - y2 * scaleY * invZ);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>if (sx &lt; 0 || sx &gt;= cols || sy &lt; 0 || sy &gt;= usableRows) continue;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const idx = sy * cols + sx;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>if (z2 &gt; zBuf[idx]) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>zBuf[idx] = z2;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>// Normale pivotée pour l'éclairage 3D</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const nx1 = p.nx * cosY - p.nz * sinY;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const nz1 = p.nx * sinY + p.nz * cosY;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const ny2 = p.ny * cosX - nz1 * sinX;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const nz2 = p.ny * sinX + nz1 * cosX;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const dot = nx1 * lightDir[0] + ny2 * lightDir[1] + nz2 * lightDir[2];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const lum = Math.max(0.18, Math.min(1.0, 0.32 + Math.max(0, dot) * 0.72));</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const rampIdx = Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>chBuf[idx] = p.ch || RAMP[rampIdx];</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">            </span>const shade = 0.48 + lum * 0.58;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const r = Math.min(255, Math.round(p.r * shade));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const g = Math.min(255, Math.round(p.g * shade));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const b = Math.min(255, Math.round(p.b * shade));</p>
+<p class="p1"><span class="Apple-converted-space">            </span>colBuf[idx] = `rgb(${r},${g},${b})`;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 2. Particules flottantes</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const tSec = time * 0.001;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let i = 0; i &lt; sparkles.length; i++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const sp = sparkles[i];</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const a = sp.angle + tSec * 0.25 * sp.speed;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const px = Math.cos(a) * sp.radius;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const pz = Math.sin(a) * sp.radius;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const py = sp.yBase + Math.sin(tSec * sp.speed + sp.phase) * 0.22;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const x1 = px * cosY - pz * sinY;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const z1 = px * sinY + pz * cosY;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const y2 = py * cosX - z1 * sinX;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const z2 = py * sinX + z1 * cosX;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>const invZ = camDist / (camDist - z2);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const sx = Math.round(centerCol + x1 * scaleX * invZ);</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const sy = Math.round(centerRow - y2 * scaleY * invZ);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">          </span>if (sx &gt;= 0 &amp;&amp; sx &lt; cols &amp;&amp; sy &gt;= 0 &amp;&amp; sy &lt; usableRows) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const idx = sy * cols + sx;</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (z2 &gt; zBuf[idx]) {</p>
+<p class="p1"><span class="Apple-converted-space">              </span>const twinkle = 0.45 + 0.55 * Math.sin(tSec * 3.0 + sp.phase);</p>
+<p class="p1"><span class="Apple-converted-space">              </span>if (twinkle &gt; 0.35) {</p>
+<p class="p1"><span class="Apple-converted-space">                </span>zBuf[idx] = z2;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>chBuf[idx] = sp.ch;</p>
+<p class="p1"><span class="Apple-converted-space">                </span>colBuf[idx] = `rgb(${Math.round(sp.color[0]*twinkle)},${Math.round(sp.color[1]*twinkle)},${Math.round(sp.color[2]*twinkle)})`;</p>
+<p class="p1"><span class="Apple-converted-space">              </span>}</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 3. Dessin sur fond noir pur</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = "#000000";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.font = `bold ${fontSize}px "JetBrains Mono", "Fira Code", Consolas, monospace`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const offsetX = (window.innerWidth - cols * charW) * 0.5;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const offsetY = (window.innerHeight - rows * charH) * 0.5;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>for (let y = 0; y &lt; usableRows; y++) {</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const rowOff = y * cols;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>const py = offsetY + y * charH;</p>
+<p class="p1"><span class="Apple-converted-space">          </span>for (let x = 0; x &lt; cols; x++) {</p>
+<p class="p1"><span class="Apple-converted-space">            </span>const ch = chBuf[rowOff + x];</p>
+<p class="p1"><span class="Apple-converted-space">            </span>if (ch) {</p>
+<p class="p1"><span class="Apple-converted-space">              </span>ctx.fillStyle = colBuf[rowOff + x];</p>
+<p class="p1"><span class="Apple-converted-space">              </span>ctx.fillText(ch, offsetX + x * charW, py);</p>
+<p class="p1"><span class="Apple-converted-space">            </span>}</p>
+<p class="p1"><span class="Apple-converted-space">          </span>}</p>
+<p class="p1"><span class="Apple-converted-space">        </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// 4. Texte ASCII en bas ("I love you sweetheart &lt;3")</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const msgFontSize = Math.max(12, Math.min(20, Math.floor(window.innerWidth / (MESSAGE.length * 0.72))));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.font = `bold ${msgFontSize}px "JetBrains Mono", "Fira Code", Consolas, monospace`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const pulse = 0.85 + 0.15 * Math.sin(tSec * 2.2);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const mr = Math.round(255 * pulse);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const mg = Math.round(125 * pulse);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const mb = Math.round(180 * pulse);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = `rgb(${mr}, ${mg}, ${mb})`;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const textWidth = ctx.measureText(MESSAGE).width;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const textX = (window.innerWidth - textWidth) * 0.5;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const textY = window.innerHeight - msgFontSize * 2.2;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillText(MESSAGE, textX, textY);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>requestAnimationFrame(render);</p>
+<p class="p1"><span class="Apple-converted-space">    </span>})();</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
