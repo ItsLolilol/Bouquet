@@ -48,23 +48,27 @@
       // Palette de densité ASCII (du sombre au lumineux)
       const RAMP = " .,:;-=+*#%@";
 
-      // Couleurs fidèles au rendu terminal de la vidéo
+      // Palette de couleurs vibrantes façon terminal
       const COLORS = {
-        pink:        [255, 105, 180],
-        lightPink:   [255, 165, 210],
-        red:         [255, 65, 85],
-        purple:      [195, 110, 255],
-        yellow:      [255, 225, 65],
-        orange:      [255, 145, 50],
-        white:       [245, 245, 250],
-        brownCenter: [120, 72, 32],
-        goldCenter:  [255, 195, 45],
-        stemGreen:   [55, 185, 85],
-        leafGreen:   [75, 225, 105],
-        darkGreen:   [35, 140, 65],
-        wrapLight:   [220, 225, 235],
-        wrapBack:    [185, 195, 210],
-        ribbon:      [255, 75, 130]
+        pink:        [255, 95, 175],
+        hotPink:     [255, 55, 145],
+        lightPink:   [255, 175, 215],
+        red:         [255, 55, 75],
+        deepRed:     [215, 30, 55],
+        purple:      [200, 110, 255],
+        yellow:      [255, 225, 55],
+        orange:      [255, 145, 45],
+        white:       [250, 250, 255],
+        cream:       [255, 240, 220],
+        brownCenter: [125, 70, 28],
+        goldCenter:  [255, 195, 35],
+        stemGreen:   [50, 185, 80],
+        leafGreen:   [65, 235, 95],
+        darkGreen:   [32, 155, 65],
+        wrapLight:   [230, 234, 242],
+        wrapMid:     [198, 205, 218],
+        wrapBack:    [172, 182, 198],
+        ribbon:      [255, 65, 125]
       };
 
       // ==========================================
@@ -92,62 +96,70 @@
       }
 
       // ==========================================
-      // Construction du bouquet 3D (nuage de points + normales)
+      // Construction du nuage de points 3D
       // ==========================================
-      const points = [];
+      const tmpX = [], tmpY = [], tmpZ = [];
+      const tmpNX = [], tmpNY = [], tmpNZ = [];
+      const tmpR = [], tmpG = [], tmpB = [];
+      const tmpCh = [];
 
-      function addPoint(x, y, z, nx, ny, nz, color, charOverride = null) {
-        points.push({
-          x, y, z,
-          nx, ny, nz,
-          r: color[0],
-          g: color[1],
-          b: color[2],
-          ch: charOverride
-        });
+      function addPoint(x, y, z, nx, ny, nz, color, charOverride = "") {
+        tmpX.push(x); tmpY.push(y); tmpZ.push(z);
+        tmpNX.push(nx); tmpNY.push(ny); tmpNZ.push(nz);
+        tmpR.push(color[0]); tmpG.push(color[1]); tmpB.push(color[2]);
+        tmpCh.push(charOverride);
       }
 
-      // Fleur type cosmos / marguerite / tournesol
+      function tintColor(color, factor) {
+        return [
+          Math.min(255, Math.round(color[0] * factor)),
+          Math.min(255, Math.round(color[1] * factor)),
+          Math.min(255, Math.round(color[2] * factor))
+        ];
+      }
+
+      // 1. Grande fleur type cosmos / marguerite / tournesol (dense + pétales larges)
       function addCosmos(cx, cy, cz, dir, petalCount, radius, petalColor, centerColor) {
         const { right, up, forward } = basisFromDir(dir);
 
-        // Cœur bombé de la fleur
-        const centerR = radius * 0.30;
-        for (let i = 0; i < 65; i++) {
-          const u = Math.sqrt(i / 65);
-          const theta = i * 2.39996; // Angle d'or
+        // Cœur bombé dense
+        const centerR = radius * 0.29;
+        const centerPts = Math.round(95 * (radius / 0.6));
+        for (let i = 0; i < centerPts; i++) {
+          const u = Math.sqrt(i / centerPts);
+          const theta = i * 2.39996;
           const rr = u * centerR;
           const lx = Math.cos(theta) * rr;
           const lz = Math.sin(theta) * rr;
-          const ly = Math.sqrt(Math.max(0, 1 - u * u)) * centerR * 0.75;
+          const ly = Math.sqrt(Math.max(0, 1 - u * u)) * centerR * 0.72;
 
           const px = cx + right[0] * lx + up[0] * ly + forward[0] * lz;
           const py = cy + right[1] * lx + up[1] * ly + forward[1] * lz;
           const pz = cz + right[2] * lx + up[2] * ly + forward[2] * lz;
 
           const n = normalize([
-            right[0] * lx + up[0] * (ly + 0.2) + forward[0] * lz,
-            right[1] * lx + up[1] * (ly + 0.2) + forward[1] * lz,
-            right[2] * lx + up[2] * (ly + 0.2) + forward[2] * lz
+            right[0] * lx + up[0] * (ly + 0.22) + forward[0] * lz,
+            right[1] * lx + up[1] * (ly + 0.22) + forward[1] * lz,
+            right[2] * lx + up[2] * (ly + 0.22) + forward[2] * lz
           ]);
-
           addPoint(px, py, pz, n[0], n[1], n[2], centerColor);
         }
 
-        // Pétales en 3D légèrement recourbés
+        // Pétales généreux et légèrement courbés en 3D
         for (let p = 0; p < petalCount; p++) {
           const baseAngle = (p / petalCount) * Math.PI * 2;
-          const petalWidth = (Math.PI / petalCount) * 0.85;
+          const petalWidth = (Math.PI / petalCount) * 0.90;
 
-          for (let ri = 1; ri <= 8; ri++) {
-            const t = ri / 8;
-            const dist = centerR * 0.85 + t * (radius - centerR * 0.85);
-            const widthFactor = Math.sin(t * Math.PI) * petalWidth;
-            const stepsW = Math.max(2, Math.round(4 * Math.sin(t * Math.PI)));
+          for (let ri = 1; ri <= 12; ri++) {
+            const t = ri / 12;
+            const dist = centerR * 0.80 + t * (radius - centerR * 0.80);
+            const widthFactor = Math.pow(Math.sin(t * Math.PI), 0.78) * petalWidth;
+            const stepsW = Math.max(2, Math.round(5 * Math.sin(t * Math.PI)));
+            const col = tintColor(petalColor, 0.82 + 0.24 * t);
 
             for (let wi = -stepsW; wi <= stepsW; wi++) {
               const a = baseAngle + (wi / (stepsW || 1)) * widthFactor;
-              const cup = Math.sin(t * Math.PI * 0.85) * radius * 0.22 - t * t * radius * 0.12;
+              const cup = Math.sin(t * Math.PI * 0.85) * radius * 0.22 - t * t * radius * 0.14;
 
               const lx = Math.cos(a) * dist;
               const lz = Math.sin(a) * dist;
@@ -158,32 +170,83 @@
               const pz = cz + right[2] * lx + up[2] * ly + forward[2] * lz;
 
               const n = normalize([
-                up[0] * 0.85 + right[0] * Math.cos(a) * 0.25 + forward[0] * Math.sin(a) * 0.25,
-                up[1] * 0.85 + right[1] * Math.cos(a) * 0.25 + forward[1] * Math.sin(a) * 0.25,
-                up[2] * 0.85 + right[2] * Math.cos(a) * 0.25 + forward[2] * Math.sin(a) * 0.25
+                up[0] * 0.86 + right[0] * Math.cos(a) * 0.28 + forward[0] * Math.sin(a) * 0.28,
+                up[1] * 0.86 + right[1] * Math.cos(a) * 0.28 + forward[1] * Math.sin(a) * 0.28,
+                up[2] * 0.86 + right[2] * Math.cos(a) * 0.28 + forward[2] * Math.sin(a) * 0.28
               ]);
-
-              addPoint(px, py, pz, n[0], n[1], n[2], petalColor);
+              addPoint(px, py, pz, n[0], n[1], n[2], col);
             }
           }
         }
       }
 
-      // Tulipe en 3D (forme de calice)
+      // 2. Rose / Pivoine en spirale 3D (donne du volume majestueux)
+      function addRose(cx, cy, cz, dir, radius, innerColor, outerColor) {
+        const { right, up, forward } = basisFromDir(dir);
+        const layers = 4;
+
+        for (let l = 0; l < layers; l++) {
+          const lt = l / (layers - 1);
+          const layerR = radius * (0.28 + lt * 0.72);
+          const petalsInLayer = 5 + l * 2;
+          const tilt = 0.22 + lt * 0.65;
+          const col = [
+            Math.round(innerColor[0] + (outerColor[0] - innerColor[0]) * lt),
+            Math.round(innerColor[1] + (outerColor[1] - innerColor[1]) * lt),
+            Math.round(innerColor[2] + (outerColor[2] - innerColor[2]) * lt)
+          ];
+
+          for (let p = 0; p < petalsInLayer; p++) {
+            const pAngle = (p / petalsInLayer) * Math.PI * 2 + l * 0.65;
+            const arcSpan = (Math.PI / petalsInLayer) * 1.45;
+
+            for (let vi = 0; vi <= 7; vi++) {
+              const v = vi / 7;
+              const h = v * radius * (0.55 - lt * 0.12);
+              const flare = layerR * (0.65 + v * 0.45 * tilt) + Math.sin(v * Math.PI) * radius * 0.08;
+
+              for (let ui = -4; ui <= 4; ui++) {
+                const u = ui / 4;
+                const a = pAngle + u * arcSpan;
+                const curl = (1 - u * u) * 0.08 * radius * v;
+                const r = flare + curl;
+
+                const lx = Math.cos(a) * r;
+                const lz = Math.sin(a) * r;
+                const ly = h - lt * radius * 0.10;
+
+                const px = cx + right[0] * lx + up[0] * ly + forward[0] * lz;
+                const py = cy + right[1] * lx + up[1] * ly + forward[1] * lz;
+                const pz = cz + right[2] * lx + up[2] * ly + forward[2] * lz;
+
+                const n = normalize([
+                  right[0] * Math.cos(a) * 0.75 + forward[0] * Math.sin(a) * 0.75 + up[0] * (0.45 + v * 0.35),
+                  right[1] * Math.cos(a) * 0.75 + forward[1] * Math.sin(a) * 0.75 + up[1] * (0.45 + v * 0.35),
+                  right[2] * Math.cos(a) * 0.75 + forward[2] * Math.sin(a) * 0.75 + up[2] * (0.45 + v * 0.35)
+                ]);
+                addPoint(px, py, pz, n[0], n[1], n[2], col);
+              }
+            }
+          }
+        }
+      }
+
+      // 3. Grande tulipe sculptée en calice
       function addTulip(cx, cy, cz, dir, scale, color) {
         const { right, up, forward } = basisFromDir(dir);
-        const h = 0.62 * scale;
-        const maxR = 0.34 * scale;
+        const h = 0.78 * scale;
+        const maxR = 0.42 * scale;
 
-        for (let vi = 0; vi <= 14; vi++) {
-          const v = vi / 14;
-          const r = maxR * Math.pow(Math.sin(v * Math.PI * 0.82), 0.72);
-          const y = (v - 0.1) * h;
-          const ringSteps = Math.max(8, Math.round(24 * (r / maxR)));
+        for (let vi = 0; vi <= 18; vi++) {
+          const v = vi / 18;
+          const r = maxR * Math.pow(Math.sin(v * Math.PI * 0.84), 0.70);
+          const y = (v - 0.08) * h;
+          const ringSteps = Math.max(12, Math.round(32 * (r / maxR)));
+          const col = tintColor(color, 0.85 + v * 0.22);
 
           for (let ui = 0; ui < ringSteps; ui++) {
             const u = (ui / ringSteps) * Math.PI * 2;
-            const lobe = 1 + 0.08 * Math.cos(u * 6) * v;
+            const lobe = 1 + 0.09 * Math.cos(u * 6) * v;
             const lx = Math.cos(u) * r * lobe;
             const lz = Math.sin(u) * r * lobe;
 
@@ -192,33 +255,33 @@
             const pz = cz + right[2] * lx + up[2] * y + forward[2] * lz;
 
             const n = normalize([
-              right[0] * Math.cos(u) + forward[0] * Math.sin(u) + up[0] * 0.25,
-              right[1] * Math.cos(u) + forward[1] * Math.sin(u) + up[1] * 0.25,
-              right[2] * Math.cos(u) + forward[2] * Math.sin(u) + up[2] * 0.25
+              right[0] * Math.cos(u) + forward[0] * Math.sin(u) + up[0] * 0.28,
+              right[1] * Math.cos(u) + forward[1] * Math.sin(u) + up[1] * 0.28,
+              right[2] * Math.cos(u) + forward[2] * Math.sin(u) + up[2] * 0.28
             ]);
-
-            addPoint(px, py, pz, n[0], n[1], n[2], color);
+            addPoint(px, py, pz, n[0], n[1], n[2], col);
           }
         }
       }
 
-      // Tige courbée reliant la fleur au bas du bouquet
-      function addStem(x0, y0, z0, x1, y1, z1) {
-        const steps = 26;
-        const midX = (x0 + x1) * 0.35;
-        const midY = (y0 + y1) * 0.5;
-        const midZ = (z0 + z1) * 0.35;
+      // 4. Tige supérieure (UNIQUEMENT au-dessus du papier, jamais à travers !)
+      function addUpperStem(x0, y0, z0) {
+        const yEnterWrap = 0.34;
+        if (y0 <= yEnterWrap + 0.06) return;
+
+        const x1 = x0 * 0.32;
+        const z1 = z0 * 0.32;
+        const steps = 16;
 
         for (let i = 0; i <= steps; i++) {
           const t = i / steps;
-          const inv = 1 - t;
-          const x = inv * inv * x0 + 2 * inv * t * midX + t * t * x1;
-          const y = inv * inv * y0 + 2 * inv * t * midY + t * t * y1;
-          const z = inv * inv * z0 + 2 * inv * t * midZ + t * t * z1;
+          const x = x0 + (x1 - x0) * t;
+          const y = y0 + (yEnterWrap - y0) * t;
+          const z = z0 + (z1 - z0) * t;
 
-          for (let a = 0; a < 4; a++) {
-            const ang = (a / 4) * Math.PI * 2;
-            const rad = 0.032;
+          for (let a = 0; a < 5; a++) {
+            const ang = (a / 5) * Math.PI * 2;
+            const rad = 0.036;
             addPoint(
               x + Math.cos(ang) * rad,
               y,
@@ -230,195 +293,301 @@
         }
       }
 
-      // Feuille verte allongée en 3D
+      // 5. Fagot de tiges qui dépassent proprement sous le bas du papier
+      function addBottomStems() {
+        const stemCount = 9;
+        const yTop = -1.74;
+        const yBot = -2.24;
+
+        for (let s = 0; s < stemCount; s++) {
+          const ang = (s / stemCount) * Math.PI * 2;
+          const spread = s === 0 ? 0 : 0.16;
+          const ox = Math.cos(ang) * spread;
+          const oz = Math.sin(ang) * spread;
+          const lenJitter = (s % 3) * 0.06;
+
+          for (let i = 0; i <= 12; i++) {
+            const t = i / 12;
+            const y = yTop + t * (yBot - lenJitter - yTop);
+            const flare = 1 + t * 0.35;
+            const cx = ox * flare;
+            const cz = oz * flare;
+
+            for (let a = 0; a < 4; a++) {
+              const ka = (a / 4) * Math.PI * 2;
+              addPoint(
+                cx + Math.cos(ka) * 0.032,
+                y,
+                cz + Math.sin(ka) * 0.032,
+                Math.cos(ka), 0, Math.sin(ka),
+                s % 2 === 0 ? COLORS.stemGreen : COLORS.darkGreen
+              );
+            }
+          }
+        }
+      }
+
+      // 6. Feuille large et dense encadrant le bouquet
       function addLeaf(ox, oy, oz, dir, length, width, color) {
         const { right, up, forward } = basisFromDir(dir);
-        for (let i = 1; i <= 12; i++) {
-          const t = i / 12;
+        for (let i = 1; i <= 18; i++) {
+          const t = i / 18;
           const w = Math.sin(t * Math.PI) * width;
-          const droop = -t * t * length * 0.28;
-          const wSteps = Math.max(1, Math.round(3 * Math.sin(t * Math.PI)));
+          const droop = -t * t * length * 0.30;
+          const wSteps = Math.max(2, Math.round(5 * Math.sin(t * Math.PI)));
 
           for (let j = -wSteps; j <= wSteps; j++) {
             const s = j / (wSteps || 1);
             const lx = s * w;
             const ly = t * length;
-            const lz = droop + Math.abs(s) * w * 0.18;
+            const lz = droop + Math.abs(s) * w * 0.16;
 
             const px = ox + right[0] * lx + up[0] * ly + forward[0] * lz;
             const py = oy + right[1] * lx + up[1] * ly + forward[1] * lz;
             const pz = oz + right[2] * lx + up[2] * ly + forward[2] * lz;
 
-            addPoint(px, py, pz, forward[0], forward[1] + 0.4, forward[2], color);
+            addPoint(px, py, pz, forward[0], forward[1] + 0.45, forward[2], color);
           }
         }
       }
 
-      // Papier d'emballage conique + rabat arrière
-      function addWrap() {
-        // Cône principal (resserré à la taille y = -0.85, évasé vers le haut et le bas)
-        const yTop = 0.45;
-        const yWaist = -0.88;
-        const yBot = -1.62;
+      // 7. Touches de gypsophile (petits nuages de fleurs blanches)
+      function addBabysBreath(cx, cy, cz) {
+        for (let i = 0; i < 9; i++) {
+          const a = (i / 9) * Math.PI * 2;
+          const r = 0.08 + (i % 3) * 0.05;
+          const dy = ((i % 3) - 1) * 0.06;
+          addPoint(
+            cx + Math.cos(a) * r,
+            cy + dy,
+            cz + Math.sin(a) * r,
+            Math.cos(a), 0.7, Math.sin(a),
+            COLORS.white,
+            i % 2 === 0 ? "*" : "+"
+          );
+        }
+      }
 
-        for (let i = 0; i <= 34; i++) {
-          const t = i / 34;
+      // 8. Papier d'emballage ultra-dense et opaque (zéro trou)
+      function addWrap() {
+        const yTop = 0.50;
+        const yWaist = -0.96;
+        const yBot = -1.78;
+
+        // Cône principal ultra-dense
+        const vSteps = 72;
+        for (let i = 0; i <= vSteps; i++) {
+          const t = i / vSteps;
           const y = yBot + t * (yTop - yBot);
 
           let radius;
           if (y >= yWaist) {
             const k = (y - yWaist) / (yTop - yWaist);
-            radius = 0.24 + Math.pow(k, 1.15) * 0.88;
+            radius = 0.25 + Math.pow(k, 1.12) * 1.02;
           } else {
             const k = (yWaist - y) / (yWaist - yBot);
-            radius = 0.24 + k * 0.28;
+            radius = 0.25 + Math.pow(k, 0.92) * 0.34;
           }
 
-          const ringSteps = Math.max(18, Math.round(radius * 46));
+          const ringSteps = Math.max(48, Math.round(radius * 92));
           for (let j = 0; j < ringSteps; j++) {
             const a = (j / ringSteps) * Math.PI * 2;
-            // Effet papier plié sur le bord supérieur
-            const fold = y > -0.2 ? Math.sin(a * 5) * 0.045 * ((y + 0.2) / 0.65) : 0;
-            // Ouverture légèrement plus basse devant pour laisser voir les fleurs
-            if (y > 0.15 && Math.sin(a) > 0.25) continue;
 
+            // Légère découpe en V sur le devant tout en haut pour laisser les fleurs déborder
+            const frontDip = yTop - 0.22 * Math.max(0, Math.sin(a));
+            if (y > frontDip) continue;
+
+            // Plis naturels du papier fleuriste
+            const foldAmp = y > yWaist ? 0.055 * ((y - yWaist) / (yTop - yWaist)) : 0.03;
+            const fold = Math.sin(a * 6 + y * 1.2) * foldAmp;
             const r = radius + fold;
+
             const x = Math.cos(a) * r;
             const z = Math.sin(a) * r;
 
-            addPoint(
-              x, y, z,
-              Math.cos(a), 0.22, Math.sin(a),
-              Math.sin(a) < 0 ? COLORS.wrapBack : COLORS.wrapLight
-            );
+            // Légère nuance entre face avant, côtés et arrière
+            const col = Math.sin(a) < -0.15 ? COLORS.wrapBack : (Math.sin(a) > 0.35 ? COLORS.wrapLight : COLORS.wrapMid);
+
+            addPoint(x, y, z, Math.cos(a), 0.24, Math.sin(a), col);
           }
         }
 
-        // Grand papier plié qui remonte derrière le bouquet
-        for (let i = 0; i <= 18; i++) {
-          const t = i / 18;
-          const y = 0.35 + t * 0.95;
-          const span = 0.95 * (1 - t * 0.25);
-          const steps = 22;
+        // Grands pans de papier plié majestueux qui montent derrière les fleurs
+        const sheetAngles = [-2.35, -1.57, -0.78];
+        for (const centerAng of sheetAngles) {
+          for (let i = 0; i <= 32; i++) {
+            const t = i / 32;
+            const y = 0.36 + t * 1.28;
+            const halfSpan = 0.62 * (1 - t * 0.34);
+            const steps = 32;
 
-          for (let j = 0; j <= steps; j++) {
-            const u = j / steps;
-            const a = Math.PI + (u - 0.5) * 2.1; // Face arrière
-            const r = 1.08 + t * 0.22 + Math.sin(u * Math.PI * 3) * 0.04;
-            const x = Math.cos(a) * r * (span / 0.95);
-            const z = Math.sin(a) * r;
-            addPoint(x, y, z, Math.cos(a), 0.15, Math.sin(a), COLORS.wrapBack);
+            for (let j = 0; j <= steps; j++) {
+              const u = (j / steps) * 2 - 1; // -1 à 1
+              const a = centerAng + u * halfSpan;
+              const arch = (1 - u * u) * 0.14;
+              const r = 1.22 + t * 0.30 + arch;
+              const x = Math.cos(a) * r;
+              const z = Math.sin(a) * r;
+
+              addPoint(
+                x, y + arch * 0.5, z,
+                Math.cos(a) * 0.65, 0.22, Math.sin(a) * 0.65,
+                t > 0.7 ? COLORS.wrapLight : COLORS.wrapBack
+              );
+            }
           }
         }
       }
 
-      // Ruban et nœud autour de la taille du bouquet
+      // 9. Ruban satin et grand nœud 3D
       function addRibbon() {
-        const yWaist = -0.88;
-        const rWaist = 0.28;
+        const yWaist = -0.96;
+        const rWaist = 0.30;
 
-        // Anneau du ruban
-        for (let iy = -2; iy <= 2; iy++) {
-          const y = yWaist + iy * 0.035;
-          for (let j = 0; j < 28; j++) {
-            const a = (j / 28) * Math.PI * 2;
+        // Bandeau autour de la taille
+        for (let iy = -4; iy <= 4; iy++) {
+          const y = yWaist + iy * 0.024;
+          for (let j = 0; j < 48; j++) {
+            const a = (j / 48) * Math.PI * 2;
             addPoint(
               Math.cos(a) * rWaist, y, Math.sin(a) * rWaist,
-              Math.cos(a), 0, Math.sin(a),
+              Math.cos(a), 0.05, Math.sin(a),
               COLORS.ribbon
             );
           }
         }
 
-        // Deux boucles du nœud devant (z > 0)
+        // Deux boucles généreuses du nœud sur l'avant (z > 0)
         for (const side of [-1, 1]) {
-          for (let i = 0; i < 24; i++) {
-            const t = (i / 24) * Math.PI * 2;
-            const lx = side * (0.20 + Math.cos(t) * 0.18);
-            const ly = yWaist + Math.sin(t) * 0.12;
-            const lz = rWaist + 0.08 + Math.sin(t * 2) * 0.04;
-            addPoint(lx, ly, lz, side * 0.3, Math.sin(t) * 0.4, 0.9, COLORS.ribbon);
+          for (let i = 0; i < 42; i++) {
+            const t = (i / 42) * Math.PI * 2;
+            for (let w = -1; w <= 1; w++) {
+              const lx = side * (0.24 + Math.cos(t) * 0.22);
+              const ly = yWaist + Math.sin(t) * 0.15 + w * 0.025;
+              const lz = rWaist + 0.09 + Math.sin(t * 2) * 0.05;
+              addPoint(lx, ly, lz, side * 0.25, Math.sin(t) * 0.35, 0.92, COLORS.ribbon);
+            }
           }
-          // Rubans qui pendent
-          for (let i = 0; i <= 14; i++) {
-            const t = i / 14;
-            const lx = side * (0.06 + t * 0.22);
-            const ly = yWaist - 0.05 - t * 0.52;
-            const lz = rWaist + 0.08 + t * 0.10;
-            addPoint(lx, ly, lz, 0, 0.1, 1, COLORS.ribbon);
+
+          // Pans du ruban qui retombent élégamment
+          for (let i = 0; i <= 26; i++) {
+            const t = i / 26;
+            for (let w = -1; w <= 1; w++) {
+              const lx = side * (0.07 + t * 0.28) + w * 0.022;
+              const ly = yWaist - 0.04 - t * 0.64;
+              const lz = rWaist + 0.10 + t * 0.18 + Math.sin(t * Math.PI) * 0.05;
+              addPoint(lx, ly, lz, side * 0.1, 0.15, 0.98, COLORS.ribbon);
+            }
           }
         }
       }
 
-      // Assemblage complet du bouquet
+      // Assemblage complet du bouquet majestueux
       function buildBouquet() {
-        // Fleurs principales (cosmos, marguerites, tournesol, tulipes)
+        // Grandes fleurs vedettes (marguerite géante, tournesol, cosmos XXL)
         const cosmosSpecs = [
           // [x, y, z, dir, petals, radius, petalColor, centerColor]
-          [ 0.00,  1.28,  0.12, [ 0.0,  1.0,  0.35], 10, 0.52, COLORS.white,     COLORS.goldCenter],
-          [-0.78,  1.05,  0.22, [-0.55, 0.85, 0.45],  8, 0.48, COLORS.pink,      COLORS.goldCenter],
-          [ 0.82,  0.96,  0.18, [ 0.55, 0.82, 0.42], 12, 0.50, COLORS.yellow,    COLORS.brownCenter],
-          [-0.38,  0.72,  0.62, [-0.30, 0.65, 0.85],  8, 0.44, COLORS.purple,    COLORS.goldCenter],
-          [ 0.45,  0.68,  0.60, [ 0.35, 0.65, 0.82],  9, 0.45, COLORS.lightPink, COLORS.goldCenter],
-          [-1.08,  0.55, -0.10, [-0.85, 0.55, 0.15], 10, 0.44, COLORS.orange,    COLORS.brownCenter],
-          [ 1.05,  0.52, -0.18, [ 0.85, 0.52, 0.05],  8, 0.44, COLORS.pink,      COLORS.goldCenter],
-          [ 0.05,  0.88, -0.58, [ 0.05, 0.85,-0.65],  9, 0.46, COLORS.purple,    COLORS.goldCenter],
-          [-0.65,  0.75, -0.52, [-0.55, 0.78,-0.55], 10, 0.45, COLORS.yellow,    COLORS.brownCenter],
-          [ 0.68,  0.78, -0.50, [ 0.55, 0.80,-0.52],  8, 0.44, COLORS.orange,    COLORS.goldCenter]
+          [ 0.00,  1.65,  0.14, [ 0.00,  1.00,  0.30], 12, 0.76, COLORS.white,     COLORS.goldCenter],  // Grande marguerite au sommet
+          [-1.02,  1.26,  0.22, [-0.58,  0.82,  0.42], 10, 0.72, COLORS.pink,      COLORS.goldCenter],  // Grand cosmos rose gauche
+          [ 1.05,  1.18,  0.20, [ 0.60,  0.78,  0.42], 14, 0.74, COLORS.yellow,    COLORS.brownCenter], // Grand tournesol droite
+          [-0.48,  0.82,  0.78, [-0.32,  0.58,  0.88], 10, 0.64, COLORS.purple,    COLORS.goldCenter],  // Grand cosmos violet avant-gauche
+          [ 0.56,  0.80,  0.76, [ 0.35,  0.58,  0.86], 10, 0.64, COLORS.lightPink, COLORS.goldCenter],  // Grand cosmos rose pâle avant-droit
+          [-1.38,  0.66, -0.14, [-0.88,  0.48,  0.12], 12, 0.62, COLORS.orange,    COLORS.brownCenter], // Cosmos orange flanc gauche
+          [ 1.36,  0.64, -0.18, [ 0.88,  0.48,  0.08], 10, 0.62, COLORS.hotPink,   COLORS.goldCenter],  // Cosmos fuchsia flanc droit
+          [ 0.04,  1.20, -0.78, [ 0.04,  0.82, -0.62], 10, 0.66, COLORS.purple,    COLORS.goldCenter],  // Arrière haut
+          [-0.86,  0.98, -0.68, [-0.56,  0.74, -0.58], 12, 0.64, COLORS.yellow,    COLORS.brownCenter], // Arrière gauche
+          [ 0.88,  1.00, -0.66, [ 0.56,  0.75, -0.56], 10, 0.64, COLORS.orange,    COLORS.goldCenter]   // Arrière droit
         ];
 
         for (const [x, y, z, dir, petals, r, col, center] of cosmosSpecs) {
           addCosmos(x, y, z, dir, petals, r, col, center);
-          addStem(x, y - 0.1, z, x * 0.15, -1.72, z * 0.15);
+          addUpperStem(x, y - 0.14, z);
         }
 
-        // Tulipes rouges, roses et jaunes
+        // Roses 3D volumineuses au cœur du bouquet
+        const roseSpecs = [
+          // [x, y, z, dir, radius, innerCol, outerCol]
+          [ 0.02,  0.96,  0.62, [ 0.02,  0.65,  0.85], 0.54, COLORS.deepRed, COLORS.red],
+          [-0.56,  1.42, -0.12, [-0.28,  0.95,  0.08], 0.50, COLORS.hotPink, COLORS.lightPink],
+          [ 0.58,  1.40, -0.10, [ 0.28,  0.95,  0.10], 0.52, COLORS.deepRed, COLORS.red]
+        ];
+
+        for (const [x, y, z, dir, r, inner, outer] of roseSpecs) {
+          addRose(x, y, z, dir, r, inner, outer);
+          addUpperStem(x, y - 0.12, z);
+        }
+
+        // Grandes tulipes élancées
         const tulipSpecs = [
-          [ 0.38,  1.22, -0.12, [ 0.25, 1.0,  0.05], 1.05, COLORS.red],
-          [-0.45,  1.18, -0.18, [-0.25, 1.0, -0.05], 1.00, COLORS.red],
-          [ 0.02,  0.48,  0.78, [ 0.0,  0.55, 0.90], 0.92, COLORS.red],
-          [-0.82,  0.32,  0.45, [-0.65, 0.45, 0.65], 0.90, COLORS.yellow],
-          [ 0.85,  0.32,  0.42, [ 0.65, 0.45, 0.62], 0.90, COLORS.pink]
+          [ 0.34,  1.62, -0.34, [ 0.22,  0.98, -0.18], 1.24, COLORS.red],
+          [-0.42,  1.58, -0.36, [-0.24,  0.98, -0.18], 1.20, COLORS.yellow],
+          [-1.08,  0.48,  0.58, [-0.65,  0.42,  0.70], 1.12, COLORS.red],
+          [ 1.10,  0.46,  0.54, [ 0.65,  0.42,  0.68], 1.12, COLORS.pink]
         ];
 
         for (const [x, y, z, dir, scale, col] of tulipSpecs) {
           addTulip(x, y, z, dir, scale, col);
-          addStem(x, y, z, x * 0.12, -1.72, z * 0.12);
+          addUpperStem(x, y, z);
         }
 
-        // Feuillage vert autour de la couronne
-        const leafCount = 14;
+        // Feuillage généreux en couronne autour du papier (comme sur la vidéo)
+        const leafCount = 18;
         for (let i = 0; i < leafCount; i++) {
-          const a = (i / leafCount) * Math.PI * 2 + 0.15;
-          const dir = [Math.cos(a) * 0.92, 0.35 + (i % 3) * 0.12, Math.sin(a) * 0.92];
+          const a = (i / leafCount) * Math.PI * 2 + 0.12;
+          const dir = [Math.cos(a) * 0.96, 0.22 + (i % 3) * 0.14, Math.sin(a) * 0.96];
           addLeaf(
-            Math.cos(a) * 0.42, 0.22, Math.sin(a) * 0.42,
+            Math.cos(a) * 0.52, 0.28, Math.sin(a) * 0.52,
             dir,
-            0.85 + (i % 2) * 0.18,
-            0.20,
+            1.18 + (i % 3) * 0.18,
+            0.28,
             i % 2 === 0 ? COLORS.leafGreen : COLORS.darkGreen
           );
         }
 
+        // Touches de gypsophile blanc entre les grandes fleurs
+        const babyCoords = [
+          [-0.78, 1.48, 0.35], [0.80, 1.45, 0.32],
+          [-0.22, 1.28, 0.68], [0.28, 1.25, 0.66],
+          [-1.20, 0.98, 0.28], [1.22, 0.96, 0.24],
+          [-0.42, 1.32, -0.58], [0.46, 1.30, -0.56]
+        ];
+        for (const [bx, by, bz] of babyCoords) {
+          addBabysBreath(bx, by, bz);
+        }
+
         addWrap();
         addRibbon();
+        addBottomStems();
       }
 
+      buildBouquet();
+
+      // Conversion en tableaux typés pour une fluidité maximale (60 FPS)
+      const pointCount = tmpX.length;
+      const pX  = Float32Array.from(tmpX);
+      const pY  = Float32Array.from(tmpY);
+      const pZ  = Float32Array.from(tmpZ);
+      const pNX = Float32Array.from(tmpNX);
+      const pNY = Float32Array.from(tmpNY);
+      const pNZ = Float32Array.from(tmpNZ);
+      const pR  = Uint8Array.from(tmpR);
+      const pG  = Uint8Array.from(tmpG);
+      const pB  = Uint8Array.from(tmpB);
+      const pCh = tmpCh;
+
       // Particules flottantes autour du bouquet
-      const sparkles = Array.from({ length: 28 }, (_, i) => ({
-        angle: (i / 28) * Math.PI * 2,
-        radius: 1.45 + Math.random() * 0.85,
-        yBase: -1.2 + Math.random() * 2.8,
-        speed: 0.4 + Math.random() * 0.6,
+      const sparkles = Array.from({ length: 30 }, (_, i) => ({
+        angle: (i / 30) * Math.PI * 2,
+        radius: 1.95 + Math.random() * 0.85,
+        yBase: -1.4 + Math.random() * 3.4,
+        speed: 0.38 + Math.random() * 0.55,
         phase: Math.random() * Math.PI * 2,
         ch: i % 3 === 0 ? "*" : (i % 3 === 1 ? "+" : "."),
         color: i % 3 === 0 ? COLORS.lightPink : (i % 3 === 1 ? COLORS.yellow : COLORS.white)
       }));
 
-      buildBouquet();
-
       // ==========================================
-      // Caméra & Interactions (Souris + Tactile)
+      // Caméra & Interactions (Souris + Tactile corrigés)
       // ==========================================
       let yaw = 0;
       let pitch = 0.14;
@@ -426,7 +595,7 @@
 
       let velYaw = 0;
       let velPitch = 0;
-      const AUTO_SPIN_SPEED = 0.0085;
+      const AUTO_SPIN_SPEED = -0.0075;
 
       const activePointers = new Map();
       let isDragging = false;
@@ -470,6 +639,7 @@
           lastX = e.clientX;
           lastY = e.clientY;
 
+          // Sens naturel (glisser à gauche tourne vers la gauche)
           velYaw = -dx * 0.009;
           velPitch = dy * 0.007;
           yaw += velYaw;
@@ -507,7 +677,7 @@
       }, { passive: false });
 
       // ==========================================
-      // Grille ASCII & Buffers pré-alloués
+      // Grille ASCII & Buffers
       // ==========================================
       let cols = 0;
       let rows = 0;
@@ -527,17 +697,17 @@
         canvas.height = Math.floor(h * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-        // Taille de police adaptative selon l'écran (mobile, iPad, PC)
+        // Taille de police adaptative selon l'écran (iPhone, iPad, Mac, PC)
         const minDim = Math.min(w, h);
-        fontSize = Math.max(9, Math.min(15, Math.floor(minDim / 52)));
+        fontSize = Math.max(8, Math.min(14, Math.floor(minDim / 56)));
         ctx.font = `bold ${fontSize}px "JetBrains Mono", "Fira Code", Consolas, monospace`;
         ctx.textBaseline = "top";
 
         charW = ctx.measureText("M").width;
-        charH = Math.ceil(fontSize * 1.15);
+        charH = Math.ceil(fontSize * 1.12);
 
-        cols = Math.max(24, Math.floor(w / charW));
-        rows = Math.max(20, Math.floor(h / charH));
+        cols = Math.max(28, Math.floor(w / charW));
+        rows = Math.max(22, Math.floor(h / charH));
 
         const size = cols * rows;
         zBuf = new Float32Array(size);
@@ -556,7 +726,6 @@
       function render(time) {
         requestAnimationFrame(render);
 
-        // Rotation automatique + inertie fluide après un glisser
         if (!isDragging) {
           yaw += AUTO_SPIN_SPEED + velYaw;
           pitch = Math.max(-0.95, Math.min(1.05, pitch + velPitch));
@@ -564,7 +733,6 @@
           velPitch *= 0.92;
         }
 
-        const size = cols * rows;
         zBuf.fill(-1e9);
         chBuf.fill("");
 
@@ -573,32 +741,32 @@
         const cosX = Math.cos(pitch);
         const sinX = Math.sin(pitch);
 
-        // Zone réservée au texte en bas
         const usableRows = rows - 4;
         const centerCol = cols * 0.5;
         const centerRow = usableRows * 0.52;
 
-        // Mise à l'échelle automatique (garde le bouquet entier sur portrait et paysage)
+        // Mise à l'échelle automatique (garde le bouquet entier et majestueux sur tous les écrans)
         const charAspect = charH / charW;
-        const scaleY = Math.min(usableRows * 0.25, (cols / charAspect) * 0.28) * zoom;
+        const scaleY = Math.min(usableRows * 0.195, (cols / charAspect) * 0.215) * zoom;
         const scaleX = scaleY * charAspect;
-        const camDist = 5.4;
+        const camDist = 6.6;
 
-        // 1. Projection des points du bouquet
-        for (let i = 0; i < points.length; i++) {
-          const p = points[i];
+        // 1. Projection du bouquet 3D
+        for (let i = 0; i < pointCount; i++) {
+          const px = pX[i];
+          const py = pY[i] + 0.05;
+          const pz = pZ[i];
 
-          // Rotation Y puis X
-          const x1 = p.x * cosY - p.z * sinY;
-          const z1 = p.x * sinY + p.z * cosY;
-          const y2 = p.y * cosX - z1 * sinX;
-          const z2 = p.y * sinX + z1 * cosX;
+          const x1 = px * cosY - pz * sinY;
+          const z1 = px * sinY + pz * cosY;
+          const y2 = py * cosX - z1 * sinX;
+          const z2 = py * sinX + z1 * cosX;
 
           const invZ = camDist / (camDist - z2);
           if (invZ <= 0) continue;
 
-          const sx = Math.round(centerCol + x1 * scaleX * invZ);
-          const sy = Math.round(centerRow - y2 * scaleY * invZ);
+          const sx = (centerCol + x1 * scaleX * invZ + 0.5) | 0;
+          const sy = (centerRow - y2 * scaleY * invZ + 0.5) | 0;
 
           if (sx < 0 || sx >= cols || sy < 0 || sy >= usableRows) continue;
 
@@ -606,22 +774,22 @@
           if (z2 > zBuf[idx]) {
             zBuf[idx] = z2;
 
-            // Normale pivotée pour l'éclairage 3D
-            const nx1 = p.nx * cosY - p.nz * sinY;
-            const nz1 = p.nx * sinY + p.nz * cosY;
-            const ny2 = p.ny * cosX - nz1 * sinX;
-            const nz2 = p.ny * sinX + nz1 * cosX;
+            const nx = pNX[i], ny = pNY[i], nz = pNZ[i];
+            const nx1 = nx * cosY - nz * sinY;
+            const nz1 = nx * sinY + nz * cosY;
+            const ny2 = ny * cosX - nz1 * sinX;
+            const nz2 = ny * sinX + nz1 * cosX;
 
             const dot = nx1 * lightDir[0] + ny2 * lightDir[1] + nz2 * lightDir[2];
-            const lum = Math.max(0.18, Math.min(1.0, 0.32 + Math.max(0, dot) * 0.72));
+            const lum = Math.max(0.20, Math.min(1.0, 0.34 + Math.max(0, dot) * 0.70));
 
-            const rampIdx = Math.min(RAMP.length - 1, Math.floor(lum * RAMP.length));
-            chBuf[idx] = p.ch || RAMP[rampIdx];
+            const rampIdx = Math.min(RAMP.length - 1, (lum * RAMP.length) | 0);
+            chBuf[idx] = pCh[i] || RAMP[rampIdx];
 
-            const shade = 0.48 + lum * 0.58;
-            const r = Math.min(255, Math.round(p.r * shade));
-            const g = Math.min(255, Math.round(p.g * shade));
-            const b = Math.min(255, Math.round(p.b * shade));
+            const shade = 0.50 + lum * 0.56;
+            const r = Math.min(255, (pR[i] * shade) | 0);
+            const g = Math.min(255, (pG[i] * shade) | 0);
+            const b = Math.min(255, (pB[i] * shade) | 0);
             colBuf[idx] = `rgb(${r},${g},${b})`;
           }
         }
@@ -633,7 +801,7 @@
           const a = sp.angle + tSec * 0.25 * sp.speed;
           const px = Math.cos(a) * sp.radius;
           const pz = Math.sin(a) * sp.radius;
-          const py = sp.yBase + Math.sin(tSec * sp.speed + sp.phase) * 0.22;
+          const py = sp.yBase + Math.sin(tSec * sp.speed + sp.phase) * 0.25;
 
           const x1 = px * cosY - pz * sinY;
           const z1 = px * sinY + pz * cosY;
@@ -641,8 +809,8 @@
           const z2 = py * sinX + z1 * cosX;
 
           const invZ = camDist / (camDist - z2);
-          const sx = Math.round(centerCol + x1 * scaleX * invZ);
-          const sy = Math.round(centerRow - y2 * scaleY * invZ);
+          const sx = (centerCol + x1 * scaleX * invZ + 0.5) | 0;
+          const sy = (centerRow - y2 * scaleY * invZ + 0.5) | 0;
 
           if (sx >= 0 && sx < cols && sy >= 0 && sy < usableRows) {
             const idx = sy * cols + sx;
@@ -651,7 +819,7 @@
               if (twinkle > 0.35) {
                 zBuf[idx] = z2;
                 chBuf[idx] = sp.ch;
-                colBuf[idx] = `rgb(${Math.round(sp.color[0]*twinkle)},${Math.round(sp.color[1]*twinkle)},${Math.round(sp.color[2]*twinkle)})`;
+                colBuf[idx] = `rgb(${(sp.color[0] * twinkle) | 0},${(sp.color[1] * twinkle) | 0},${(sp.color[2] * twinkle) | 0})`;
               }
             }
           }
@@ -681,14 +849,11 @@
         const msgFontSize = Math.max(12, Math.min(20, Math.floor(window.innerWidth / (MESSAGE.length * 0.72))));
         ctx.font = `bold ${msgFontSize}px "JetBrains Mono", "Fira Code", Consolas, monospace`;
         const pulse = 0.85 + 0.15 * Math.sin(tSec * 2.2);
-        const mr = Math.round(255 * pulse);
-        const mg = Math.round(125 * pulse);
-        const mb = Math.round(180 * pulse);
+        ctx.fillStyle = `rgb(${(255 * pulse) | 0},${(125 * pulse) | 0},${(180 * pulse) | 0})`;
 
-        ctx.fillStyle = `rgb(${mr}, ${mg}, ${mb})`;
         const textWidth = ctx.measureText(MESSAGE).width;
         const textX = (window.innerWidth - textWidth) * 0.5;
-        const textY = window.innerHeight - msgFontSize * 2.2;
+        const textY = window.innerHeight - msgFontSize * 2.1;
         ctx.fillText(MESSAGE, textX, textY);
       }
 
