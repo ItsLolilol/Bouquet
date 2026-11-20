@@ -470,7 +470,7 @@
           lastX = e.clientX;
           lastY = e.clientY;
 
-          velYaw = dx * 0.009;
+          velYaw = -dx * 0.009;
           velPitch = dy * 0.007;
           yaw += velYaw;
           pitch = Math.max(-0.95, Math.min(1.05, pitch + velPitch));
