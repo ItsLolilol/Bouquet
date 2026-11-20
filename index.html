@@ -48,36 +48,44 @@
       // Palette de densité ASCII (du sombre au lumineux)
       const RAMP = " .,:;-=+*#%@";
       const RAMP_CODES = Uint8Array.from(RAMP, (c) => c.charCodeAt(0));
+      const CHAR_LUT = Array.from({ length: 128 }, (_, i) => String.fromCharCode(i));
 
-      // Palette harmonieuse romantique & lumineuse sur fond noir
+      // Palette harmonieuse romantique & contrastée sur fond noir
       const COLORS = {
         lilyWhite:   [252, 249, 255],
-        lilyThroat:  [228, 242, 204],
-        lilyBlush:   [255, 198, 222],
-        lilySpeck:   [235, 115, 158],
+        lilyThroat:  [224, 242, 198],
+        lilyBlush:   [255, 192, 220],
+        lilySpeck:   [236, 118, 162],
         stamenStem:  [235, 242, 215],
-        antherGold:  [255, 188, 52],
-        antherAmber: [232, 122, 38],
+        antherGold:  [255, 192, 55],
+        antherAmber: [232, 125, 38],
 
-        crimsonDeep: [175, 22, 54],
-        crimson:     [235, 42, 78],
-        rosePink:    [255, 115, 168],
-        blushPink:   [255, 182, 212],
-        lilacSoft:   [206, 150, 255],
-        champagne:   [255, 222, 168],
-        goldCenter:  [255, 200, 72],
+        crimsonCore: [115, 12, 34],
+        crimsonMid:  [215, 28, 62],
+        crimsonEdge: [255, 86, 118],
 
-        leafLight:   [72, 205, 122],
-        leafMid:     [44, 165, 92],
-        leafDark:    [26, 118, 66],
+        pinkCore:    [175, 42, 92],
+        pinkMid:     [245, 108, 162],
+        pinkEdge:    [255, 196, 224],
+
+        champCore:   [198, 128, 96],
+        champMid:    [248, 196, 162],
+        champEdge:   [255, 236, 218],
+
+        lilacDeep:   [145, 86, 210],
+        lilacSoft:   [214, 165, 255],
+
+        leafDark:    [24, 108, 58],
+        leafMid:     [44, 162, 88],
+        leafLight:   [78, 212, 124],
 
         wrapPearl:   [234, 230, 240],
-        wrapSoft:    [202, 198, 214],
-        wrapShadow:  [164, 162, 180],
-        wrapInner:   [138, 134, 152],
+        wrapSoft:    [200, 196, 212],
+        wrapShadow:  [158, 156, 174],
+        wrapInner:   [130, 126, 144],
 
-        ribbonMain:  [248, 58, 115],
-        ribbonDeep:  [190, 30, 78],
+        ribbonMain:  [248, 56, 114],
+        ribbonDeep:  [182, 26, 74],
         whitePure:   [255, 255, 255]
       };
 
@@ -114,6 +122,14 @@
         ];
       }
 
+      function toWorld(cx, cy, cz, basis, lx, ly, lz) {
+        return {
+          x: cx + basis.right[0] * lx + basis.up[0] * ly + basis.forward[0] * lz,
+          y: cy + basis.right[1] * lx + basis.up[1] * ly + basis.forward[1] * lz,
+          z: cz + basis.right[2] * lx + basis.up[2] * ly + basis.forward[2] * lz
+        };
+      }
+
       // ==========================================
       // Stockage Géométrie : Maillage 3D + Points d'accent
       // ==========================================
@@ -137,13 +153,12 @@
         const colsU = wrapU ? uSteps : uSteps + 1;
         const rowsV = vSteps + 1;
         const baseIdx = mX.length;
-
         const gridPos = new Array(rowsV * colsU);
 
         for (let iv = 0; iv < rowsV; iv++) {
           const v = iv / vSteps;
           for (let iu = 0; iu < colsU; iu++) {
-            const u = wrapU ? (iu / uSteps) : (iu / uSteps);
+            const u = iu / uSteps;
             const res = evalFn(u, v);
             gridPos[iv * colsU + iu] = res;
             mX.push(res.x); mY.push(res.y); mZ.push(res.z);
@@ -152,7 +167,6 @@
           }
         }
 
-        // Calcul de normales lisses à partir des voisins de la grille
         for (let iv = 0; iv < rowsV; iv++) {
           for (let iu = 0; iu < colsU; iu++) {
             const iuPrev = wrapU ? (iu - 1 + colsU) % colsU : Math.max(0, iu - 1);
@@ -183,7 +197,6 @@
           }
         }
 
-        // Triangulation de la grille
         for (let iv = 0; iv < vSteps; iv++) {
           for (let iu = 0; iu < uSteps; iu++) {
             const iuNext = wrapU ? (iu + 1) % colsU : iu + 1;
@@ -199,21 +212,93 @@
         }
       }
 
-      function toWorld(cx, cy, cz, basis, lx, ly, lz) {
-        return {
-          x: cx + basis.right[0] * lx + basis.up[0] * ly + basis.forward[0] * lz,
-          y: cy + basis.right[1] * lx + basis.up[1] * ly + basis.forward[1] * lz,
-          z: cz + basis.right[2] * lx + basis.up[2] * ly + basis.forward[2] * lz
-        };
+      // ==========================================
+      // 1. VRAIE ROSE SCULPTÉE EN SPIRALE 3D
+      //    (Cœur enroulé sombre + pétales galbés à bord recourbé lumineux)
+      // ==========================================
+      function addRose(cx, cy, cz, dir, radius, coreCol, midCol, edgeCol) {
+        const basis = basisFromDir(dir);
+        const totalPetals = 20;
+        const goldenAngle = 2.3999632; // 137.5° : spirale botanique réelle
+
+        // Calice vert discret sous la rose
+        addGridMesh(10, 2, (u, v) => {
+          const a = u * Math.PI * 2;
+          const r = radius * (0.14 + v * 0.24);
+          const ly = -0.14 * radius + v * 0.14 * radius;
+          const wp = toWorld(cx, cy, cz, basis, Math.cos(a) * r, ly, Math.sin(a) * r);
+          return { x: wp.x, y: wp.y, z: wp.z, r: COLORS.leafDark[0], g: COLORS.leafDark[1], b: COLORS.leafDark[2] };
+        }, true, basis.up);
+
+        // 20 pétales distincts en spirale (du cœur serré vers la corolle ouverte)
+        for (let i = 0; i < totalPetals; i++) {
+          const t = i / (totalPetals - 1); // 0 = cœur, 1 = bord extérieur
+          const pAngle = i * goldenAngle;
+
+          // Rayon de base qui s'écarte progressivement en spirale
+          const baseR = radius * (0.045 + Math.pow(t, 1.15) * 0.44);
+          const petalHeight = radius * (0.52 + 0.34 * Math.sin(t * Math.PI * 0.72));
+          // Inclinaison : presque vertical au centre, s'ouvre gracieusement à l'extérieur
+          const openTilt = 0.16 + Math.pow(t, 1.35) * 0.88;
+          // Ouverture angulaire du pétale (plus large sur l'extérieur)
+          const halfArc = 0.62 + t * 0.34;
+          // Intensité du rebord recourbé (la "lèvre" typique d'un pétale de rose)
+          const recurve = radius * (0.04 + t * 0.24);
+
+          const layerDark = mixColor(coreCol, midCol, t * 0.45);
+          const layerBody = mixColor(coreCol, midCol, 0.35 + t * 0.65);
+          const layerRim  = mixColor(midCol, edgeCol, 0.40 + t * 0.60);
+
+          addGridMesh(4, 5, (uNorm, v) => {
+            const u = uNorm * 2 - 1; // -1 à 1 (largeur du pétale)
+            // Profil du pétale de rose : large en haut, légèrement en cœur avec pointe douce au milieu
+            const widthProfile = Math.sin(Math.pow(v, 0.58) * Math.PI * 0.88);
+            const a = pAngle + u * halfArc * (0.35 + 0.65 * widthProfile);
+
+            // Creux du pétale (bombé vers l'extérieur au milieu, bords pincés)
+            const cup = (1 - u * u) * 0.08 * radius * Math.sin(v * Math.PI);
+            // Recourbement vers l'extérieur sur le haut du pétale (v > 0.62)
+            const lip = v > 0.60 ? Math.pow((v - 0.60) / 0.40, 2.0) * recurve * (0.65 + 0.35 * (1 - u * u)) : 0;
+            // Petite pointe centrale recourbée typique de la rose
+            const centerLip = Math.pow(v, 3.0) * (1 - u * u) * 0.055 * radius * t;
+
+            const r = baseR + v * petalHeight * Math.sin(openTilt) + cup + lip + centerLip;
+            const ly = v * petalHeight * Math.cos(openTilt)
+                     - lip * 0.48
+                     - t * 0.10 * radius
+                     + (1 - u * u) * 0.03 * radius * v;
+
+            const wp = toWorld(cx, cy, cz, basis, Math.cos(a) * r, ly, Math.sin(a) * r);
+
+            // Fort contraste entre le creux sombre et l'arête lumineuse du pétale
+            // -> indispensable pour que la spirale de la rose se lise instantanément en ASCII
+            let col;
+            if (v < 0.42) {
+              col = mixColor(layerDark, layerBody, v / 0.42);
+            } else if (v < 0.78) {
+              col = mixColor(layerBody, layerRim, ((v - 0.42) / 0.36) * 0.55);
+            } else {
+              col = mixColor(layerBody, layerRim, 0.55 + ((v - 0.78) / 0.22) * 0.45);
+            }
+
+            // Occlusion au fond de la rose pour marquer la profondeur entre chaque couche
+            const ao = 0.42 + 0.58 * Math.pow(v, 0.72) * (0.72 + 0.28 * t);
+            return {
+              x: wp.x, y: wp.y, z: wp.z,
+              r: Math.min(255, col[0] * ao),
+              g: Math.min(255, col[1] * ao),
+              b: Math.min(255, col[2] * ao)
+            };
+          }, false, basis.up);
+        }
       }
 
       // ==========================================
-      // 1. FLEUR DE LYS 3D (6 pétales recourbés + étamines dorées)
+      // 2. FLEUR DE LYS 3D (6 pétales recourbés + étamines dorées)
       // ==========================================
       function addLily(cx, cy, cz, dir, scale, bladeCol, tipCol) {
         const basis = basisFromDir(dir);
 
-        // 6 pétales (2 verticilles alternés de 3 pétales)
         for (let p = 0; p < 6; p++) {
           const isOuter = p % 2 === 1;
           const pAngle = (p / 6) * Math.PI * 2;
@@ -222,44 +307,40 @@
           const perpX = -sinA;
           const perpZ = cosA;
 
-          const lengthScale = isOuter ? 1.05 : 0.98;
-          const widthScale = isOuter ? 0.28 : 0.25;
-          const curlStrength = isOuter ? 0.28 : 0.20;
+          const lengthScale = isOuter ? 1.04 : 0.97;
+          const widthScale = isOuter ? 0.27 : 0.24;
+          const curlStrength = isOuter ? 0.30 : 0.22;
 
-          addGridMesh(4, 7, (uNorm, v) => {
-            const u = uNorm * 2 - 1; // -1 à 1
-            // Profil pointu typique du lys
-            const halfW = Math.sin(Math.pow(v, 0.72) * Math.PI) * widthScale * scale;
+          addGridMesh(4, 8, (uNorm, v) => {
+            const u = uNorm * 2 - 1;
+            const halfW = Math.sin(Math.pow(v, 0.70) * Math.PI) * widthScale * scale;
             const wOff = u * halfW;
 
-            // Courbe en trompette gracieusement recourbée vers l'extérieur
-            const rad = scale * lengthScale * (0.045 + 0.68 * Math.pow(v, 1.06) + 0.08 * Math.sin(v * Math.PI));
-            const ly = scale * lengthScale * (0.64 * Math.sin(v * Math.PI * 0.68) - curlStrength * Math.pow(v, 2.8))
-                     + (1 - u * u) * 0.055 * scale * Math.sin(v * Math.PI)
-                     + Math.sin(v * 12) * 0.014 * scale * Math.abs(u);
+            const rad = scale * lengthScale * (0.04 + 0.64 * Math.pow(v, 1.06) + 0.08 * Math.sin(v * Math.PI));
+            const ly = scale * lengthScale * (0.62 * Math.sin(v * Math.PI * 0.68) - curlStrength * Math.pow(v, 2.8))
+                     + (1 - u * u) * 0.05 * scale * Math.sin(v * Math.PI);
 
             const lx = cosA * rad + perpX * wOff;
             const lz = sinA * rad + perpZ * wOff;
-            const wPos = toWorld(cx, cy, cz, basis, lx, ly, lz);
+            const wp = toWorld(cx, cy, cz, basis, lx, ly, lz);
 
-            // Dégradé naturel : gorge vert-crème -> pétale nacré -> pointe rosée + nervure
             let col;
             if (v < 0.24) {
               col = mixColor(COLORS.lilyThroat, bladeCol, v / 0.24);
             } else if (v < 0.72) {
               col = bladeCol;
-              if (Math.abs(u) < 0.28 && v < 0.56) {
-                col = mixColor(col, COLORS.lilySpeck, 0.28 * (1 - Math.abs(u) / 0.28));
+              if (Math.abs(u) < 0.26 && v < 0.56) {
+                col = mixColor(col, COLORS.lilySpeck, 0.30 * (1 - Math.abs(u) / 0.26));
               }
             } else {
               col = mixColor(bladeCol, tipCol, (v - 0.72) / 0.28);
             }
 
-            return { x: wPos.x, y: wPos.y, z: wPos.z, r: col[0], g: col[1], b: col[2] };
+            return { x: wp.x, y: wp.y, z: wp.z, r: col[0], g: col[1], b: col[2] };
           }, false, basis.up);
         }
 
-        // 6 longues étamines arquées + anthères dorées au bout (signature visuelle du lys)
+        // 6 longues étamines arquées + anthères dorées
         for (let s = 0; s < 6; s++) {
           const ang = (s / 6) * Math.PI * 2 + 0.28;
           const ca = Math.cos(ang);
@@ -267,151 +348,97 @@
 
           for (let i = 1; i <= 7; i++) {
             const t = i / 7;
-            const r = scale * (0.04 + 0.28 * Math.pow(t, 1.35));
-            const ly = scale * (0.10 + 0.58 * t - 0.08 * t * t);
+            const r = scale * (0.035 + 0.26 * Math.pow(t, 1.35));
+            const ly = scale * (0.10 + 0.54 * t - 0.08 * t * t);
             const wp = toWorld(cx, cy, cz, basis, ca * r, ly, sa * r);
 
             if (i < 7) {
               addAccentPoint(wp.x, wp.y, wp.z, COLORS.stamenStem, i % 2 === 0 ? ":" : "|");
             } else {
-              // Anthère de pollen ambrée lumineuse
               addAccentPoint(wp.x, wp.y, wp.z, COLORS.antherGold, "@");
-              const wp2 = toWorld(cx, cy, cz, basis, ca * (r + 0.03 * scale), ly + 0.02 * scale, sa * (r + 0.03 * scale));
+              const wp2 = toWorld(cx, cy, cz, basis, ca * (r + 0.028 * scale), ly + 0.018 * scale, sa * (r + 0.028 * scale));
               addAccentPoint(wp2.x, wp2.y, wp2.z, COLORS.antherAmber, "*");
             }
           }
         }
-        // Pistil central
-        const pistilTop = toWorld(cx, cy, cz, basis, 0, 0.66 * scale, 0);
+        const pistilTop = toWorld(cx, cy, cz, basis, 0, 0.62 * scale, 0);
         addAccentPoint(pistilTop.x, pistilTop.y, pistilTop.z, COLORS.lilyThroat, "o");
       }
 
       // ==========================================
-      // 2. ROSE VELOURS 3D (couches de pétales en spirale)
-      // ==========================================
-      function addRose(cx, cy, cz, dir, radius, innerCol, outerCol) {
-        const basis = basisFromDir(dir);
-        const layers = 4;
-
-        for (let l = 0; l < layers; l++) {
-          const lt = l / (layers - 1);
-          const layerR = radius * (0.24 + lt * 0.76);
-          const petalsInLayer = 4 + l * 2;
-          const colBase = mixColor(innerCol, outerCol, lt * 0.75);
-          const colTip = mixColor(innerCol, outerCol, Math.min(1, lt + 0.35));
-
-          for (let p = 0; p < petalsInLayer; p++) {
-            const pAngle = (p / petalsInLayer) * Math.PI * 2 + l * 0.72;
-            const arcSpan = (Math.PI / petalsInLayer) * 1.38;
-
-            addGridMesh(3, 4, (uNorm, v) => {
-              const u = uNorm * 2 - 1;
-              const a = pAngle + u * arcSpan * (0.65 + 0.35 * Math.sin(v * Math.PI * 0.75));
-              const flare = layerR * (0.58 + v * (0.32 + lt * 0.48)) + (1 - u * u) * 0.07 * radius * v;
-              const ly = v * radius * (0.58 - lt * 0.14) - Math.pow(v, 2.2) * lt * 0.14 * radius;
-
-              const lx = Math.cos(a) * flare;
-              const lz = Math.sin(a) * flare;
-              const wp = toWorld(cx, cy, cz, basis, lx, ly, lz);
-              const col = mixColor(colBase, colTip, v);
-
-              return { x: wp.x, y: wp.y, z: wp.z, r: col[0], g: col[1], b: col[2] };
-            }, false, basis.up);
-          }
-        }
-      }
-
-      // ==========================================
-      // 3. TULIPE ÉLANCÉE 3D
+      // 3. TULIPE ÉLANCÉE 3D (accents latéraux harmonieux)
       // ==========================================
       function addTulip(cx, cy, cz, dir, scale, baseCol, tipCol) {
         const basis = basisFromDir(dir);
-        const h = 0.74 * scale;
-        const maxR = 0.36 * scale;
+        const h = 0.66 * scale;
+        const maxR = 0.32 * scale;
 
         for (let p = 0; p < 6; p++) {
           const pAngle = (p / 6) * Math.PI * 2;
-          const isOuter = p % 2 === 0;
-          const rBoost = isOuter ? 1.06 : 0.96;
+          const rBoost = p % 2 === 0 ? 1.06 : 0.96;
 
-          addGridMesh(3, 5, (uNorm, v) => {
+          addGridMesh(3, 6, (uNorm, v) => {
             const u = uNorm * 2 - 1;
-            const span = 0.56 * Math.sin(Math.pow(v, 0.7) * Math.PI * 0.92);
+            const span = 0.56 * Math.sin(Math.pow(v, 0.65) * Math.PI * 0.92);
             const a = pAngle + u * span;
-            const r = maxR * rBoost * Math.pow(Math.sin(v * Math.PI * 0.84), 0.68);
+            const r = maxR * rBoost * Math.pow(Math.sin(v * Math.PI * 0.84), 0.64);
             const ly = v * h;
 
-            const lx = Math.cos(a) * r;
-            const lz = Math.sin(a) * r;
-            const wp = toWorld(cx, cy, cz, basis, lx, ly, lz);
+            const wp = toWorld(cx, cy, cz, basis, Math.cos(a) * r, ly, Math.sin(a) * r);
             const col = mixColor(baseCol, tipCol, v);
-
-            return { x: wp.x, y: wp.y, z: wp.z, r: col[0], g: col[1], b: col[2] };
+            const ao = 0.55 + 0.45 * v;
+            return { x: wp.x, y: wp.y, z: wp.z, r: col[0] * ao, g: col[1] * ao, b: col[2] * ao };
           }, false, basis.up);
         }
       }
 
       // ==========================================
-      // 4. GRANDE FLEUR ÉPANOUiE (Pivoine / Cosmos)
-      // ==========================================
-      function addBloom(cx, cy, cz, dir, petalCount, radius, innerCol, outerCol, centerCol) {
-        const basis = basisFromDir(dir);
-
-        // Cœur bombé
-        const cR = radius * 0.25;
-        addGridMesh(8, 3, (u, v) => {
-          const a = u * Math.PI * 2;
-          const r = v * cR;
-          const ly = Math.sqrt(Math.max(0, 1 - v * v)) * cR * 0.85;
-          const wp = toWorld(cx, cy, cz, basis, Math.cos(a) * r, ly, Math.sin(a) * r);
-          const col = mixColor(centerCol, COLORS.champagne, (1 - v) * 0.35);
-          return { x: wp.x, y: wp.y, z: wp.z, r: col[0], g: col[1], b: col[2] };
-        }, true, basis.up);
-
-        // Pétales généreux
-        for (let p = 0; p < petalCount; p++) {
-          const baseA = (p / petalCount) * Math.PI * 2;
-          const halfSpan = (Math.PI / petalCount) * 0.92;
-
-          addGridMesh(2, 4, (uNorm, v) => {
-            const u = uNorm * 2 - 1;
-            const dist = cR * 0.75 + v * (radius - cR * 0.75);
-            const a = baseA + u * halfSpan * Math.pow(Math.sin(v * Math.PI), 0.65);
-            const ly = Math.sin(v * Math.PI * 0.82) * radius * 0.20 - v * v * radius * 0.10;
-
-            const wp = toWorld(cx, cy, cz, basis, Math.cos(a) * dist, ly, Math.sin(a) * dist);
-            const col = mixColor(innerCol, outerCol, v);
-            return { x: wp.x, y: wp.y, z: wp.z, r: col[0], g: col[1], b: col[2] };
-          }, false, basis.up);
-        }
-      }
-
-      // ==========================================
-      // 5. FEUILLAGE ÉMERAUDE & EUCALYPTUS (100% solide)
+      // 4. FEUILLE ARRONDIE AVEC PETITE POINTE DOUCE AU BOUT
+      //    (Forme botanique ovale type rosier / camélia)
       // ==========================================
       function addLeaf(ox, oy, oz, dir, length, width, colBase, colTip) {
         const basis = basisFromDir(dir);
-        addGridMesh(2, 6, (uNorm, v) => {
+
+        addGridMesh(4, 8, (uNorm, v) => {
           const u = uNorm * 2 - 1;
-          const w = Math.sin(Math.pow(v, 0.78) * Math.PI) * width;
+
+          // Courbe ovale bien arrondie sur tout le corps, puis petite pointe délicate tout au bout
+          let profile;
+          if (v < 0.84) {
+            // Corps large et rond
+            profile = Math.pow(Math.sin((v / 0.94) * Math.PI), 0.54);
+          } else {
+            // Finition douce vers une toute petite pointe au bout (v = 0.84 -> 1.0)
+            const vt = (v - 0.84) / 0.16; // 0 à 1
+            const startW = Math.pow(Math.sin((0.84 / 0.94) * Math.PI), 0.54);
+            profile = startW * Math.pow(1 - vt, 1.35);
+          }
+
+          const w = width * profile;
           const lx = u * w;
           const ly = v * length;
-          const lz = -v * v * length * 0.32 + Math.abs(u) * w * 0.22;
+          // Légère courbure naturelle + nervure centrale en V très doux
+          const lz = -Math.pow(v, 1.8) * length * 0.24 + Math.abs(u) * w * 0.14;
 
           const wp = toWorld(ox, oy, oz, basis, lx, ly, lz);
-          const col = mixColor(colBase, colTip, v);
+          // Nervure centrale légèrement plus claire pour la lisibilité
+          let col = mixColor(colBase, colTip, v * 0.85);
+          if (Math.abs(u) < 0.18 && v < 0.85) {
+            col = mixColor(col, COLORS.leafLight, 0.25 * (1 - Math.abs(u) / 0.18));
+          }
+
           return { x: wp.x, y: wp.y, z: wp.z, r: col[0], g: col[1], b: col[2] };
         }, false, basis.forward);
       }
 
       // ==========================================
-      // 6. GYPSOPHILE (petits nuages blancs délicats)
+      // 5. GYPSOPHILE DÉLICAT (comble les petits espaces sans surcharger)
       // ==========================================
       function addBabysBreath(cx, cy, cz) {
-        for (let i = 0; i < 8; i++) {
-          const a = (i / 8) * Math.PI * 2;
-          const r = 0.08 + (i % 3) * 0.055;
-          const dy = ((i % 3) - 1) * 0.065;
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2;
+          const r = 0.06 + (i % 2) * 0.045;
+          const dy = ((i % 3) - 1) * 0.045;
           addAccentPoint(
             cx + Math.cos(a) * r,
             cy + dy,
@@ -423,34 +450,31 @@
       }
 
       // ==========================================
-      // 7. PAPIER FLEURISTE MAJESTUEUX (100% OPAQUE — ZÉRO TIGE VISIBLE)
+      // 6. PAPIER FLEURISTE OPAQUE (COL ARRIÈRE ABAISSÉ & ÉLÉGANT)
       // ==========================================
       function addWrap() {
-        const yWaist = -0.86;
-        const yBot = -1.72;
+        const yWaist = -0.90;
+        const yBot = -1.76;
 
-        // A. Cône sablier principal avec plis naturels et jupe évasée en bas
-        addGridMesh(36, 18, (u, v) => {
+        // A. Cône sablier principal 100% opaque (zéro tige visible)
+        addGridMesh(40, 20, (u, v) => {
           const a = u * Math.PI * 2;
-          // Bord supérieur sculpté : légèrement plus bas devant pour que les fleurs débordent
           const frontDip = Math.max(0, Math.sin(a));
-          const yTop = 0.64 - 0.24 * Math.pow(frontDip, 1.3) + 0.05 * Math.cos(a * 4);
-          // Bord inférieur légèrement ondulé façon papier froissé
-          const yBotLocal = yBot + 0.045 * Math.sin(a * 5);
+          const yTop = 0.48 - 0.18 * Math.pow(frontDip, 1.25) + 0.035 * Math.cos(a * 4);
+          const yBotLocal = yBot + 0.04 * Math.sin(a * 5);
 
           const y = yBotLocal + v * (yTop - yBotLocal);
 
           let radius;
           if (y >= yWaist) {
             const k = (y - yWaist) / (yTop - yWaist);
-            radius = 0.24 + Math.pow(k, 1.08) * 0.98;
+            radius = 0.24 + Math.pow(k, 1.06) * 0.88;
           } else {
             const k = (yWaist - y) / (yWaist - yBotLocal);
             radius = 0.24 + Math.pow(k, 0.88) * 0.34;
           }
 
-          // Plis souples du papier fleuriste
-          const pleatAmp = y > yWaist ? 0.055 * ((y - yWaist) / (yTop - yWaist)) : 0.042;
+          const pleatAmp = y > yWaist ? 0.048 * ((y - yWaist) / (yTop - yWaist)) : 0.038;
           const pleat = Math.sin(a * 7 + y * 0.9) * pleatAmp;
           const r = radius + pleat;
 
@@ -463,8 +487,8 @@
           return { x, y, z, r: col[0], g: col[1], b: col[2] };
         }, true);
 
-        // B. Fermeture propre sous la jupe du papier (aspect fini même si on penche le bouquet)
-        addGridMesh(18, 3, (u, v) => {
+        // B. Fond fermé proprement sous la jupe du papier
+        addGridMesh(20, 3, (u, v) => {
           const a = u * Math.PI * 2;
           const r = v * 0.54;
           const y = yBot + 0.08 * (1 - v) + 0.03 * Math.sin(a * 5) * v;
@@ -472,31 +496,38 @@
           return { x: Math.cos(a) * r, y, z: Math.sin(a) * r, r: col[0], g: col[1], b: col[2] };
         }, true, [0, -1, 0]);
 
-        // C. Grand éventail architectural de 5 feuilles de papier plié montant derrière le bouquet
+        // C. Coussin végétal discret à l'intérieur du haut du cône (évite tout vide noir quand on incline)
+        addGridMesh(18, 5, (u, v) => {
+          const a = u * Math.PI * 2;
+          const r = v * 0.96;
+          const y = 0.52 - 0.14 * v * v + 0.04 * Math.sin(a * 5) * v;
+          const col = mixColor(COLORS.leafDark, COLORS.leafMid, 0.35 + 0.35 * v);
+          return { x: Math.cos(a) * r, y, z: Math.sin(a) * r, r: col[0], g: col[1], b: col[2] };
+        }, true, [0, 1, 0]);
+
+        // D. Col de papier arrière ABAISSÉ et délicatement évasé (encadre sans jamais rentrer dans les fleurs)
         const sheets = [
-          // [angleCentre, demiLargeurAngulaire, hauteurMax, rayonBase, decalageZ]
-          [-Math.PI * 0.50, 0.56, 2.12, 1.18, 0.26], // Grande feuille centrale haute (couronne)
-          [-Math.PI * 0.74, 0.50, 1.88, 1.16, 0.22], // Aile arrière gauche
-          [-Math.PI * 0.26, 0.50, 1.88, 1.16, 0.22], // Aile arrière droite
-          [-Math.PI * 0.96, 0.42, 1.48, 1.18, 0.16], // Pan latéral gauche
-          [-Math.PI * 0.04, 0.42, 1.48, 1.18, 0.16]  // Pan latéral droit
+          // [angleCentre, demiLargeur, hauteurMax, rayonBase, evaseExt]
+          [-Math.PI * 0.50, 0.52, 1.16, 1.12, 0.42], // Pan central arrière (abaissé)
+          [-Math.PI * 0.74, 0.44, 0.96, 1.12, 0.36], // Aile arrière gauche
+          [-Math.PI * 0.26, 0.44, 0.96, 1.12, 0.36], // Aile arrière droite
+          [-Math.PI * 0.95, 0.34, 0.78, 1.12, 0.24], // Rebord gauche
+          [-Math.PI * 0.05, 0.34, 0.78, 1.12, 0.24]  // Rebord droit
         ];
 
         for (const [cAng, halfSpan, hTop, rBase, flareOut] of sheets) {
-          addGridMesh(8, 8, (uNorm, v) => {
-            const u = uNorm * 2 - 1; // -1 à 1
-            const span = halfSpan * (0.92 - v * 0.16);
+          addGridMesh(8, 7, (uNorm, v) => {
+            const u = uNorm * 2 - 1;
+            const span = halfSpan * (0.94 - v * 0.12);
             const a = cAng + u * span;
-            // Sommet en arche douce façon origami fleuriste
-            const peak = (1 - u * u) * 0.22 * v;
-            const y = 0.28 + v * (hTop - 0.28) + peak;
-            // Léger repli vers l'extérieur en haut
-            const fold = (1 - u * u) * 0.12 + Math.pow(v, 1.5) * flareOut;
-            const r = rBase + fold;
+            const arch = (1 - u * u) * 0.12 * v;
+            const y = 0.26 + v * (hTop - 0.26) + arch;
+            // Évasé vers l'extérieur pour bercer les fleurs sans les couper
+            const r = rBase + Math.pow(v, 1.25) * flareOut + (1 - u * u) * 0.08;
 
             const x = Math.cos(a) * r;
             const z = Math.sin(a) * r;
-            const col = mixColor(COLORS.wrapShadow, COLORS.wrapPearl, 0.25 + v * 0.75);
+            const col = mixColor(COLORS.wrapShadow, COLORS.wrapPearl, 0.30 + v * 0.70);
 
             return { x, y, z, r: col[0], g: col[1], b: col[2] };
           }, false);
@@ -504,13 +535,12 @@
       }
 
       // ==========================================
-      // 8. RUBAN SATIN & GRAND NŒUD 3D SCULPTÉ
+      // 7. RUBAN SATIN & GRAND NŒUD 3D SCULPTÉ
       // ==========================================
       function addRibbon() {
-        const yWaist = -0.86;
+        const yWaist = -0.90;
         const rWaist = 0.29;
 
-        // Bandeau autour de la taille
         addGridMesh(28, 3, (u, v) => {
           const a = u * Math.PI * 2;
           const y = yWaist + (v - 0.5) * 0.18;
@@ -518,7 +548,7 @@
           return { x: Math.cos(a) * rWaist, y, z: Math.sin(a) * rWaist, r: col[0], g: col[1], b: col[2] };
         }, true);
 
-        // Nœud central bombé
+        // Nœud central
         addGridMesh(8, 5, (u, v) => {
           const a = u * Math.PI * 2;
           const phi = (v - 0.5) * Math.PI;
@@ -528,7 +558,7 @@
           return { x, y, z, r: COLORS.ribbonMain[0], g: COLORS.ribbonMain[1], b: COLORS.ribbonMain[2] };
         }, true);
 
-        // Deux grandes boucles de ruban en 3D devant
+        // Deux boucles et pans fluides devant
         for (const side of [-1, 1]) {
           addGridMesh(12, 4, (u, v) => {
             const t = u * Math.PI * 2;
@@ -540,116 +570,104 @@
             return { x: loopX, y: loopY, z: loopZ, r: col[0], g: col[1], b: col[2] };
           }, true);
 
-          // Deux longs pans fluides qui retombent sur la jupe de papier
           addGridMesh(3, 12, (uNorm, v) => {
             const u = uNorm * 2 - 1;
-            const width = 0.068 + v * 0.032;
+            const width = 0.066 + v * 0.032;
             const cx = side * (0.06 + v * 0.34 + Math.sin(v * Math.PI) * 0.06);
-            const cy = yWaist - 0.05 - v * 0.78;
+            const cy = yWaist - 0.05 - v * 0.76;
             const cz = rWaist + 0.08 + v * 0.34 + Math.sin(v * Math.PI * 1.3) * 0.07;
 
-            const x = cx + u * width;
-            const y = cy;
-            const z = cz + Math.abs(u) * 0.015;
             const col = mixColor(COLORS.ribbonMain, COLORS.ribbonDeep, v * 0.45);
-            return { x, y, z, r: col[0], g: col[1], b: col[2] };
+            return { x: cx + u * width, y: cy, z: cz + Math.abs(u) * 0.015, r: col[0], g: col[1], b: col[2] };
           }, false);
         }
       }
 
       // ==========================================
-      // ASSEMBLAGE DU BOUQUET MAJESTUEUX
+      // ASSEMBLAGE DU BOUQUET (ESPACEMENT VÉRIFIÉ — ZÉRO CHEVAUCHEMENT)
       // ==========================================
       function buildBouquet() {
-        // 1. CINQ GRANDS LYS MAJESTUEUX (couronne haute + flancs élancés)
+        // 1. QUATRE GRANDS LYS EN COURONNE MAJESTUEUSE (aucune collision entre eux ni avec les roses)
         const lilySpecs = [
           // [x, y, z, dir, scale, bladeCol, tipCol]
-          [ 0.00,  1.66,  0.14, [ 0.00,  0.96,  0.32], 1.18, COLORS.lilyWhite, COLORS.lilyBlush],  // Grand lys roi au sommet
-          [-1.08,  1.28,  0.16, [-0.66,  0.76,  0.34], 1.08, COLORS.lilyWhite, COLORS.lilyBlush],  // Grand lys gauche
-          [ 1.10,  1.24,  0.14, [ 0.68,  0.74,  0.32], 1.08, COLORS.lilyWhite, COLORS.lilyBlush],  // Grand lys droit
-          [-0.58,  1.42, -0.58, [-0.36,  0.84, -0.46], 1.00, COLORS.lilyBlush, COLORS.lilyWhite],  // Lys rosé arrière gauche
-          [ 0.62,  1.40, -0.56, [ 0.38,  0.84, -0.44], 1.00, COLORS.lilyBlush, COLORS.lilyWhite]   // Lys rosé arrière droit
+          [ 0.00,  1.76, -0.08, [ 0.00,  0.94,  0.34], 0.92, COLORS.lilyWhite, COLORS.lilyBlush], // Lys roi au sommet
+          [-1.24,  1.44, -0.08, [-0.68,  0.70,  0.22], 0.86, COLORS.lilyWhite, COLORS.lilyBlush], // Lys haut gauche
+          [ 1.24,  1.44, -0.08, [ 0.68,  0.70,  0.22], 0.86, COLORS.lilyWhite, COLORS.lilyBlush], // Lys haut droit
+          [ 0.00,  1.44, -0.94, [ 0.00,  0.74, -0.67], 0.86, COLORS.lilyBlush, COLORS.lilyWhite]  // Lys haut arrière
         ];
         for (const [x, y, z, dir, sc, bCol, tCol] of lilySpecs) {
           addLily(x, y, z, dir, sc, bCol, tCol);
         }
 
-        // 2. ROSES VELOURS 3D (cœur riche et romantique)
+        // 2. SEPT VRAIES ROSES 3D SCULPTÉES (parfaitement espacées en dôme équilibré)
         const roseSpecs = [
-          // [x, y, z, dir, radius, innerCol, outerCol]
-          [ 0.00,  0.92,  0.72, [ 0.00,  0.54,  0.88], 0.56, COLORS.crimsonDeep, COLORS.crimson],   // Grande rose rouge devant centre
-          [-0.64,  0.82,  0.66, [-0.40,  0.52,  0.82], 0.50, COLORS.rosePink,    COLORS.blushPink], // Rose poudrée avant gauche
-          [ 0.66,  0.80,  0.64, [ 0.42,  0.50,  0.82], 0.50, COLORS.crimsonDeep, COLORS.crimson],   // Rose rouge avant droite
-          [-0.48,  1.34,  0.22, [-0.26,  0.88,  0.38], 0.48, COLORS.crimsonDeep, COLORS.crimson],   // Rose haute gauche
-          [ 0.50,  1.32,  0.22, [ 0.28,  0.88,  0.38], 0.48, COLORS.rosePink,    COLORS.blushPink], // Rose haute droite
-          [ 0.00,  1.24, -0.68, [ 0.00,  0.78, -0.64], 0.52, COLORS.crimsonDeep, COLORS.crimson]    // Rose arrière centre
+          // [x, y, z, dir, radius, coreCol, midCol, edgeCol]
+          [ 0.00,  0.72,  0.92, [ 0.00,  0.40,  0.92], 0.46, COLORS.crimsonCore, COLORS.crimsonMid, COLORS.crimsonEdge], // Rose rouge centrale
+          [-0.64,  1.28,  0.56, [-0.36,  0.68,  0.64], 0.42, COLORS.pinkCore,    COLORS.pinkMid,    COLORS.pinkEdge],    // Rose poudrée haut-gauche
+          [ 0.64,  1.28,  0.56, [ 0.36,  0.68,  0.64], 0.42, COLORS.champCore,   COLORS.champMid,   COLORS.champEdge],   // Rose champagne haut-droite
+          [-1.08,  0.58,  0.66, [-0.64,  0.32,  0.70], 0.43, COLORS.crimsonCore, COLORS.crimsonMid, COLORS.crimsonEdge], // Rose rouge avant-gauche
+          [ 1.08,  0.58,  0.66, [ 0.64,  0.32,  0.70], 0.43, COLORS.pinkCore,    COLORS.pinkMid,    COLORS.pinkEdge],    // Rose poudrée avant-droite
+          [-0.84,  1.12, -0.76, [-0.58,  0.58, -0.58], 0.42, COLORS.crimsonCore, COLORS.crimsonMid, COLORS.crimsonEdge], // Rose rouge arrière-gauche
+          [ 0.84,  1.12, -0.76, [ 0.58,  0.58, -0.58], 0.42, COLORS.pinkCore,    COLORS.pinkMid,    COLORS.pinkEdge]     // Rose poudrée arrière-droite
         ];
-        for (const [x, y, z, dir, r, inner, outer] of roseSpecs) {
-          addRose(x, y, z, dir, r, inner, outer);
+        for (const [x, y, z, dir, r, cCol, mCol, eCol] of roseSpecs) {
+          addRose(x, y, z, dir, r, cCol, mCol, eCol);
         }
 
-        // 3. GRANDES FLEURS ÉPANOUiES (volume harmonieux lilas / blush / champagne)
-        const bloomSpecs = [
-          // [x, y, z, dir, petals, radius, innerCol, outerCol, centerCol]
-          [-1.32,  0.66,  0.08, [-0.88,  0.46,  0.26], 10, 0.58, COLORS.lilacSoft,  COLORS.blushPink, COLORS.goldCenter],
-          [ 1.32,  0.64,  0.06, [ 0.88,  0.46,  0.24], 10, 0.58, COLORS.champagne,  COLORS.lilyWhite, COLORS.goldCenter],
-          [-0.98,  0.54,  0.62, [-0.64,  0.36,  0.74], 10, 0.52, COLORS.rosePink,   COLORS.blushPink, COLORS.goldCenter],
-          [ 1.00,  0.52,  0.60, [ 0.64,  0.36,  0.74], 10, 0.52, COLORS.lilacSoft,  COLORS.lilyBlush, COLORS.goldCenter],
-          [ 0.00,  0.46,  0.96, [ 0.00,  0.28,  0.96], 10, 0.50, COLORS.champagne,  COLORS.blushPink, COLORS.goldCenter],
-          [-0.96,  0.84, -0.58, [-0.64,  0.64, -0.56], 10, 0.54, COLORS.rosePink,   COLORS.blushPink, COLORS.goldCenter],
-          [ 0.98,  0.84, -0.56, [ 0.64,  0.64, -0.56], 10, 0.54, COLORS.champagne,  COLORS.lilyWhite, COLORS.goldCenter]
-        ];
-        for (const [x, y, z, dir, p, r, iCol, oCol, cCol] of bloomSpecs) {
-          addBloom(x, y, z, dir, p, r, iCol, oCol, cCol);
-        }
+        // 3. DEUX TULIPES LATÉRALES HARMONIEUSES (élargissent la silhouette sans chevaucher)
+        addTulip(-1.26, 0.58, -0.10, [-0.88, 0.46, -0.06], 0.92, COLORS.lilacDeep, COLORS.lilacSoft);
+        addTulip( 1.26, 0.58, -0.10, [ 0.88, 0.46, -0.06], 0.92, COLORS.champCore, COLORS.champEdge);
 
-        // 4. TULIPES ÉLANCÉES (accentuent la verticalité majestueuse)
-        const tulipSpecs = [
-          [-0.38,  1.58, -0.14, [-0.20,  0.98,  0.06], 1.12, COLORS.crimsonDeep, COLORS.rosePink],
-          [ 0.40,  1.56, -0.14, [ 0.20,  0.98,  0.06], 1.12, COLORS.blushPink,   COLORS.lilyWhite],
-          [-0.94,  1.06,  0.42, [-0.58,  0.74,  0.44], 1.00, COLORS.crimsonDeep, COLORS.crimson],
-          [ 0.96,  1.04,  0.40, [ 0.58,  0.74,  0.44], 1.00, COLORS.rosePink,    COLORS.blushPink]
-        ];
-        for (const [x, y, z, dir, sc, bCol, tCol] of tulipSpecs) {
-          addTulip(x, y, z, dir, sc, bCol, tCol);
-        }
-
-        // 5. FEUILLAGE ÉMERAUDE EN COURONNE (encadre les fleurs sans aucune tige qui traverse le papier)
-        const leafCount = 20;
+        // 4. FEUILLES ARRONDIES À PETITE POINTE DOUCE (en collerette sous les fleurs, zéro collision)
+        const leafCount = 14;
         for (let i = 0; i < leafCount; i++) {
-          const a = (i / leafCount) * Math.PI * 2 + 0.14;
-          const elev = 0.24 + (i % 3) * 0.16;
-          const dir = [Math.cos(a) * 0.94, elev, Math.sin(a) * 0.94];
+          const a = (i / leafCount) * Math.PI * 2 + 0.22;
+          const ca = Math.cos(a);
+          const sa = Math.sin(a);
+          // Inclinaison douce vers l'extérieur juste au-dessus du bord du papier
+          const elev = sa > 0.2 ? 0.08 : 0.16;
+          const dir = [ca * 0.96, elev, sa * 0.96];
           addLeaf(
-            Math.cos(a) * 0.68, 0.42, Math.sin(a) * 0.68,
+            ca * 0.78, 0.40, sa * 0.78,
             dir,
-            1.14 + (i % 3) * 0.16,
-            0.26,
+            0.84 + (i % 2) * 0.10, // Longueur harmonieuse
+            0.34 + (i % 2) * 0.04, // Largeur généreuse pour un bel arrondi
             i % 2 === 0 ? COLORS.leafDark : COLORS.leafMid,
-            i % 2 === 0 ? COLORS.leafMid : COLORS.leafLight
+            i % 2 === 0 ? COLORS.leafMid  : COLORS.leafLight
           );
         }
 
-        // 6. GYPSOPHILE DÉLICAT ENTRE LES FLEURS
+        // Quelques feuilles arrondies plus hautes dans les creux entre les lys et les roses
+        const accentLeaves = [
+          [-0.62, 1.18, -0.16, [-0.52, 0.82, -0.22], 0.68, 0.26],
+          [ 0.62, 1.18, -0.16, [ 0.52, 0.82, -0.22], 0.68, 0.26],
+          [ 0.00, 1.24,  0.34, [ 0.00, 0.86,  0.50], 0.62, 0.25],
+          [ 0.00, 1.16, -0.58, [ 0.00, 0.82, -0.58], 0.64, 0.25]
+        ];
+        for (const [lx, ly, lz, dir, len, w] of accentLeaves) {
+          addLeaf(lx, ly, lz, dir, len, w, COLORS.leafDark, COLORS.leafLight);
+        }
+
+        // 5. GYPSOPHILE DÉLICAT DANS LES ESPACES LIBRES
         const babyCoords = [
-          [-0.78, 1.50, 0.30], [ 0.80, 1.48, 0.28],
-          [-0.28, 1.24, 0.68], [ 0.30, 1.22, 0.66],
-          [-1.24, 0.96, 0.36], [ 1.26, 0.94, 0.34],
-          [-0.44, 0.62, 0.88], [ 0.46, 0.60, 0.86],
-          [-0.42, 1.38, -0.58], [ 0.44, 1.36, -0.56]
+          [-0.64, 1.72,  0.18], [ 0.64, 1.72,  0.18],
+          [-0.48, 0.88,  0.88], [ 0.48, 0.88,  0.88],
+          [-1.12, 1.08,  0.40], [ 1.12, 1.08,  0.40],
+          [-0.56, 1.54, -0.78], [ 0.56, 1.54, -0.78],
+          [-1.12, 1.08, -0.48], [ 1.12, 1.08, -0.48]
         ];
         for (const [bx, by, bz] of babyCoords) {
           addBabysBreath(bx, by, bz);
         }
 
-        // 7. PAPIER OPAQUE + RUBAN SATIN
+        // 6. PAPIER OPAQUE + RUBAN SATIN
         addWrap();
         addRibbon();
       }
 
       buildBouquet();
 
-      // Conversion en tableaux typés pour des performances maximales (60 FPS partout)
+      // Tableaux typés pour la performance à haute résolution
       const vertCount = mX.length;
       const vX  = Float32Array.from(mX);
       const vY  = Float32Array.from(mY);
@@ -680,15 +698,15 @@
       const aB  = Uint8Array.from(ptB);
       const aCh = Uint8Array.from(ptCh);
 
-      // 46 particules flottantes harmonieuses autour du bouquet
-      const sparkleColors = [COLORS.blushPink, COLORS.champagne, COLORS.lilyWhite, COLORS.lilacSoft];
+      // 64 particules flottantes scintillantes autour du bouquet
+      const sparkleColors = [COLORS.pinkEdge, COLORS.champEdge, COLORS.lilyWhite, COLORS.lilacSoft];
       const sparkleChars  = ["*", "+", ".", "*"];
-      const sparkles = Array.from({ length: 46 }, (_, i) => ({
-        angle: (i / 46) * Math.PI * 2 + (i % 5) * 0.21,
-        radius: 1.92 + ((i * 37) % 100) / 95,
-        yBase: -1.55 + ((i * 53) % 100) / 100 * 3.75,
-        speed: 0.34 + ((i * 29) % 100) / 180,
-        phase: (i * 1.73) % (Math.PI * 2),
+      const sparkles = Array.from({ length: 64 }, (_, i) => ({
+        angle: (i / 64) * Math.PI * 2 + (i % 7) * 0.19,
+        radius: 1.98 + ((i * 41) % 100) / 88,
+        yBase: -1.60 + ((i * 59) % 100) / 100 * 3.95,
+        speed: 0.30 + ((i * 31) % 100) / 185,
+        phase: (i * 1.618) % (Math.PI * 2),
         ch: sparkleChars[i % sparkleChars.length].charCodeAt(0),
         color: sparkleColors[i % sparkleColors.length]
       }));
@@ -697,12 +715,12 @@
       // Caméra & Contrôles (Souris + Trackpad + Tactile)
       // ==========================================
       let yaw = 0;
-      let pitch = 0.12;
+      let pitch = 0.14;
       let zoom = 1.0;
 
       let velYaw = 0;
       let velPitch = 0;
-      const AUTO_SPIN_SPEED = -0.0068;
+      const AUTO_SPIN_SPEED = -0.0062;
 
       const activePointers = new Map();
       let isDragging = false;
@@ -715,10 +733,9 @@
         canvas.setPointerCapture(e.pointerId);
         activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-        // Double-tap / double-clic pour recentrer
         const now = performance.now();
         if (activePointers.size === 1 && now - lastTapTime < 280) {
-          pitch = 0.12;
+          pitch = 0.14;
           zoom = 1.0;
           velYaw = 0;
           velPitch = 0;
@@ -746,7 +763,7 @@
           lastX = e.clientX;
           lastY = e.clientY;
 
-          // Sens naturel : glisser à gauche fait tourner le bouquet vers la gauche
+          // Sens naturel (glisser à gauche fait tourner le bouquet vers la gauche)
           velYaw = -dx * 0.009;
           velPitch = dy * 0.007;
           yaw += velYaw;
@@ -755,7 +772,7 @@
           const pts = [...activePointers.values()];
           const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
           if (lastPinchDist > 0) {
-            zoom = Math.max(0.55, Math.min(2.2, zoom * (dist / lastPinchDist)));
+            zoom = Math.max(0.55, Math.min(2.3, zoom * (dist / lastPinchDist)));
           }
           lastPinchDist = dist;
         }
@@ -780,17 +797,17 @@
       canvas.addEventListener("wheel", (e) => {
         e.preventDefault();
         const factor = e.deltaY > 0 ? 0.92 : 1.08;
-        zoom = Math.max(0.55, Math.min(2.2, zoom * factor));
+        zoom = Math.max(0.55, Math.min(2.3, zoom * factor));
       }, { passive: false });
 
       // ==========================================
-      // Grille ASCII & Buffers pré-alloués (zéro GC)
+      // Grille ASCII Haute Résolution & Buffers
       // ==========================================
       let cols = 0;
       let rows = 0;
-      let charW = 8;
-      let charH = 14;
-      let fontSize = 13;
+      let charW = 6;
+      let charH = 10;
+      let fontSize = 10;
       let zBuf  = new Float32Array(0);
       let chBuf = new Uint8Array(0);
       let rBuf  = new Uint8Array(0);
@@ -806,16 +823,17 @@
         canvas.height = Math.floor(h * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
+        // Résolution ASCII affinée (~40% plus de détails lisibles sur tous les écrans)
         const minDim = Math.min(w, h);
-        fontSize = Math.max(8, Math.min(14, Math.floor(minDim / 58)));
+        fontSize = Math.max(6.5, Math.min(10.5, Math.round((minDim / 80) * 2) / 2));
         ctx.font = `bold ${fontSize}px "JetBrains Mono", "Fira Code", Consolas, monospace`;
         ctx.textBaseline = "top";
 
         charW = ctx.measureText("M").width;
-        charH = Math.ceil(fontSize * 1.12);
+        charH = Math.max(7, Math.round(fontSize * 1.12));
 
-        cols = Math.max(30, Math.floor(w / charW));
-        rows = Math.max(24, Math.floor(h / charH));
+        cols = Math.max(40, Math.floor(w / charW));
+        rows = Math.max(32, Math.floor(h / charH));
 
         const size = cols * rows;
         zBuf  = new Float32Array(size);
@@ -829,10 +847,25 @@
       resize();
 
       // ==========================================
-      // Boucle de rendu 3D (Rasterizer ASCII + Particules)
+      // Boucle de rendu 3D (Rasterizer ASCII + Batching Rapide)
       // ==========================================
-      const lightDir = normalize([0.42, 0.72, 0.88]);
+      const lightDir = normalize([0.42, 0.74, 0.86]);
       const rimDir   = normalize([-0.55, 0.45, -0.65]);
+      const colorCache = new Map();
+
+      function getQuantizedColor(r, g, b) {
+        const qr = r & 248;
+        const qg = g & 248;
+        const qb = b & 248;
+        const key = (qr << 16) | (qg << 8) | qb;
+        let str = colorCache.get(key);
+        if (!str) {
+          str = `rgb(${qr},${qg},${qb})`;
+          if (colorCache.size > 4096) colorCache.clear();
+          colorCache.set(key, str);
+        }
+        return str;
+      }
 
       function render(time) {
         requestAnimationFrame(render);
@@ -852,20 +885,20 @@
         const cosX = Math.cos(pitch);
         const sinX = Math.sin(pitch);
 
-        const usableRows = rows - 4;
+        const usableRows = rows - 5;
         const centerCol = cols * 0.5;
         const centerRow = usableRows * 0.52;
 
-        // Mise à l'échelle généreuse (rendu imposant sur mobile, iPad et PC)
+        // Mise à l'échelle généreuse (bouquet imposant et bien centré)
         const charAspect = charH / charW;
         const scaleY = Math.min(usableRows * 0.215, (cols / charAspect) * 0.245) * zoom;
         const scaleX = scaleY * charAspect;
-        const camDist = 7.2;
+        const camDist = 7.4;
 
-        // 1. Transformation de tous les sommets du maillage 3D
+        // 1. Transformation des sommets
         for (let i = 0; i < vertCount; i++) {
           const px = vX[i];
-          const py = vY[i] - 0.18; // Centrage vertical du bouquet
+          const py = vY[i] - 0.16;
           const pz = vZ[i];
 
           const x1 = px * cosY - pz * sinY;
@@ -878,7 +911,6 @@
           svY[i] = centerRow - y2 * scaleY * invZ;
           svZ[i] = z2;
 
-          // Éclairage 3D double-face (pour papier, pétales et feuilles) + lumière de contour
           const nx = vNX[i], ny = vNY[i], nz = vNZ[i];
           const nx1 = nx * cosY - nz * sinY;
           const nz1 = nx * sinY + nz * cosY;
@@ -887,12 +919,12 @@
 
           const dMain = nx1 * lightDir[0] + ny2 * lightDir[1] + nz2 * lightDir[2];
           const dRim  = nx1 * rimDir[0]   + ny2 * rimDir[1]   + nz2 * rimDir[2];
-          const key   = dMain >= 0 ? dMain : -dMain * 0.62;
+          const key   = dMain >= 0 ? dMain : -dMain * 0.58;
           const rim   = Math.max(0, Math.abs(dRim)) * 0.22;
-          svLum[i] = Math.max(0.20, Math.min(1.0, 0.28 + key * 0.68 + rim));
+          svLum[i] = Math.max(0.18, Math.min(1.0, 0.26 + key * 0.70 + rim));
         }
 
-        // 2. Rasterisation des triangles directement dans la grille ASCII (100% opaque)
+        // 2. Rasterisation des triangles en grille ASCII (Z-buffer opaque)
         const rampLen = RAMP_CODES.length;
         for (let t = 0; t < triCount; t++) {
           const i0 = triA[t];
@@ -929,11 +961,11 @@
             for (let px = minX; px <= maxX; px++) {
               const sx = px + 0.5;
               const w0 = ((x1 - sx) * (y2 - sy) - (x2 - sx) * (y1 - sy)) * invArea;
-              if (w0 < -0.025) continue;
+              if (w0 < -0.02) continue;
               const w1 = ((x2 - sx) * (y0 - sy) - (x0 - sx) * (y2 - sy)) * invArea;
-              if (w1 < -0.025) continue;
+              if (w1 < -0.02) continue;
               const w2 = 1 - w0 - w1;
-              if (w2 < -0.025) continue;
+              if (w2 < -0.02) continue;
 
               const z = w0 * z0 + w1 * z1 + w2 * z2;
               const idx = rowOff + px;
@@ -943,7 +975,7 @@
                 const rIdx = Math.min(rampLen - 1, Math.max(1, (lum * rampLen) | 0));
                 chBuf[idx] = RAMP_CODES[rIdx];
 
-                const shade = 0.48 + lum * 0.58;
+                const shade = 0.46 + lum * 0.60;
                 const cr = (w0 * r0 + w1 * r1 + w2 * r2) * shade;
                 const cg = (w0 * g0 + w1 * g1 + w2 * g2) * shade;
                 const cb = (w0 * b0 + w1 * b1 + w2 * b2) * shade;
@@ -958,7 +990,7 @@
         // 3. Points d'accent (étamines des lys & gypsophile blanc)
         for (let i = 0; i < accentCount; i++) {
           const px = aX[i];
-          const py = aY[i] - 0.18;
+          const py = aY[i] - 0.16;
           const pz = aZ[i];
 
           const x1 = px * cosY - pz * sinY;
@@ -982,14 +1014,14 @@
           }
         }
 
-        // 4. Particules flottantes scintillantes autour du bouquet
+        // 4. 64 particules flottantes scintillantes
         const tSec = time * 0.001;
         for (let i = 0; i < sparkles.length; i++) {
           const sp = sparkles[i];
           const a = sp.angle + tSec * 0.22 * sp.speed;
           const px = Math.cos(a) * sp.radius;
           const pz = Math.sin(a) * sp.radius;
-          const py = sp.yBase + Math.sin(tSec * sp.speed + sp.phase) * 0.24 - 0.18;
+          const py = sp.yBase + Math.sin(tSec * sp.speed + sp.phase) * 0.24 - 0.16;
 
           const x1 = px * cosY - pz * sinY;
           const z1 = px * sinY + pz * cosY;
@@ -1003,7 +1035,7 @@
           if (sx >= 0 && sx < cols && sy >= 0 && sy < usableRows) {
             const idx = sy * cols + sx;
             if (z2 > zBuf[idx]) {
-              const twinkle = 0.42 + 0.58 * Math.sin(tSec * 2.8 + sp.phase);
+              const twinkle = 0.40 + 0.60 * Math.sin(tSec * 2.8 + sp.phase);
               if (twinkle > 0.34) {
                 zBuf[idx] = z2;
                 chBuf[idx] = sp.ch;
@@ -1015,7 +1047,7 @@
           }
         }
 
-        // 5. Dessin final sur fond noir pur
+        // 5. Dessin optimisé par lots de couleur sur fond noir pur
         ctx.fillStyle = "#000000";
         ctx.fillRect(0, 0, window.innerWidth, window.innerHeight);
 
@@ -1023,16 +1055,49 @@
         const offsetX = (window.innerWidth - cols * charW) * 0.5;
         const offsetY = (window.innerHeight - rows * charH) * 0.5;
 
+        let lastFill = "";
         for (let y = 0; y < usableRows; y++) {
           const rowOff = y * cols;
           const py = offsetY + y * charH;
-          for (let x = 0; x < cols; x++) {
+          let x = 0;
+
+          while (x < cols) {
             const idx = rowOff + x;
             const code = chBuf[idx];
-            if (code !== 0) {
-              ctx.fillStyle = `rgb(${rBuf[idx]},${gBuf[idx]},${bBuf[idx]})`;
-              ctx.fillText(String.fromCharCode(code), offsetX + x * charW, py);
+            if (code === 0) {
+              x++;
+              continue;
             }
+
+            const qr = rBuf[idx] & 248;
+            const qg = gBuf[idx] & 248;
+            const qb = bBuf[idx] & 248;
+            const startX = x;
+            let run = CHAR_LUT[code];
+            x++;
+
+            // Regroupe les caractères consécutifs de même couleur quantifiée
+            while (x < cols) {
+              const nIdx = rowOff + x;
+              const nCode = chBuf[nIdx];
+              if (
+                nCode === 0 ||
+                (rBuf[nIdx] & 248) !== qr ||
+                (gBuf[nIdx] & 248) !== qg ||
+                (bBuf[nIdx] & 248) !== qb
+              ) {
+                break;
+              }
+              run += CHAR_LUT[nCode];
+              x++;
+            }
+
+            const fill = getQuantizedColor(qr, qg, qb);
+            if (fill !== lastFill) {
+              ctx.fillStyle = fill;
+              lastFill = fill;
+            }
+            ctx.fillText(run, offsetX + startX * charW, py);
           }
         }
 
